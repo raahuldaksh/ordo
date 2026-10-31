@@ -170,10 +170,10 @@ export default function TasksPage() {
                     className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer"
                   >
                     <div className="pt-0.5">
-                      {task.status === 'SUCCESS' && <CheckCircle2 className="h-4 w-4 text-foreground" />}
-                      {task.status === 'HALF' && <PieChart className="h-4 w-4 text-foreground" />}
-                      {task.status === 'FAILED' && <XCircle className="h-4 w-4 text-destructive" />}
-                      {task.status === 'PENDING' && <Clock className="h-4 w-4 text-muted-foreground" />}
+                      {task.status === 'SUCCESS' && <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                      {task.status === 'HALF' && <PieChart className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />}
+                      {task.status === 'FAILED' && <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />}
+                      {task.status === 'PENDING' && <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
                     </div>
 
                     <div className="min-w-0 space-y-1">
@@ -184,7 +184,21 @@ export default function TasksPage() {
                         <Badge variant="outline" className="text-[10px] uppercase font-mono">
                           {task.taskType}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                        <Badge
+                          variant={task.status === 'SUCCESS' ? 'default' : 'outline'}
+                          className={`text-[10px] uppercase font-mono ${
+                            task.status === 'SUCCESS'
+                              ? 'bg-emerald-600 text-white dark:bg-emerald-500 hover:bg-emerald-600'
+                              : task.status === 'HALF'
+                              ? 'text-amber-600 dark:text-amber-400 border-amber-500/40'
+                              : task.status === 'FAILED'
+                              ? 'text-rose-600 dark:text-rose-400 border-rose-500/40'
+                              : ''
+                          }`}
+                        >
+                          {task.status}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] uppercase font-mono hidden sm:inline-block">
                           {task.priority}
                         </Badge>
                       </div>

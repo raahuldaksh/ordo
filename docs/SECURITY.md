@@ -142,3 +142,4 @@ npm test tests/security.test.ts
    ```
 2. Update environment variables `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET`.
 3. Perform rolling backend restart. All existing tokens will fail signature verification, prompting users to re-authenticate cleanly.
+

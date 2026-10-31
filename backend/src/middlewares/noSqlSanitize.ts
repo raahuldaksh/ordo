@@ -25,3 +25,4 @@ export function noSqlSanitize(req: Request, _res: Response, next: NextFunction):
   if (req.query) req.query = sanitize(req.query);
   next();
 }
+

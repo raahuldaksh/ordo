@@ -83,12 +83,12 @@ export function DayTimeline({ schedule, isLoading }: DayTimelineProps) {
               style={{ top: `${currentTimeTop}px` }}
             >
               <div className="w-14 text-right pr-2">
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-foreground text-background">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-blue-600 text-white shadow-xs">
                   {format(now, 'HH:mm')}
                 </span>
               </div>
-              <div className="flex-1 h-0.5 bg-foreground relative">
-                <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-foreground shadow" />
+              <div className="flex-1 h-0.5 bg-blue-500/80 relative">
+                <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full bg-blue-600 ring-2 ring-blue-500/20 shadow" />
               </div>
             </div>
           )}
@@ -134,13 +134,13 @@ export function DayTimeline({ schedule, isLoading }: DayTimelineProps) {
                   setStatusModalTask(task);
                 }}
                 className={cn(
-                  "absolute left-20 right-4 rounded-lg p-2.5 z-10 cursor-pointer shadow-sm transition-all hover:scale-[1.005] hover:shadow-md border",
+                  "absolute left-20 right-4 rounded-lg p-2.5 z-10 cursor-pointer shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md border",
                   task.taskType === 'FIXED' && "bg-card border-foreground/30 font-medium",
                   task.taskType === 'FLEXIBLE' && "bg-card/90 border-border",
                   task.taskType === 'UNPLANNED' && "bg-muted/40 border-dashed border-border",
-                  task.status === 'SUCCESS' && "border-foreground bg-muted/20",
-                  task.status === 'FAILED' && "border-destructive/60 bg-destructive/5",
-                  task.status === 'HALF' && "border-foreground/60 bg-muted/30"
+                  task.status === 'SUCCESS' && "border-emerald-500/40 bg-emerald-500/5",
+                  task.status === 'FAILED' && "border-rose-500/50 bg-rose-500/5",
+                  task.status === 'HALF' && "border-amber-500/40 bg-amber-500/5"
                 )}
                 style={{
                   top: `${top}px`,
@@ -150,9 +150,9 @@ export function DayTimeline({ schedule, isLoading }: DayTimelineProps) {
               >
                 <div className="flex items-center justify-between gap-2 overflow-hidden">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    {task.status === 'SUCCESS' && <CheckCircle2 className="h-3.5 w-3.5 text-foreground shrink-0" />}
-                    {task.status === 'HALF' && <PieChart className="h-3.5 w-3.5 text-foreground shrink-0" />}
-                    {task.status === 'FAILED' && <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                    {task.status === 'SUCCESS' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                    {task.status === 'HALF' && <PieChart className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
+                    {task.status === 'FAILED' && <XCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0" />}
                     {task.status === 'PENDING' && <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
 
                     <span className="text-xs font-semibold truncate tracking-tight">
@@ -177,7 +177,7 @@ export function DayTimeline({ schedule, isLoading }: DayTimelineProps) {
                 )}
 
                 {height > 56 && (task.reasonCategory || task.actualReason) && (
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-destructive font-mono truncate">
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 font-mono truncate">
                     <AlertCircle className="h-3 w-3 shrink-0" />
                     <span>
                       {task.reasonCategory}: {task.actualReason || 'No details'}
