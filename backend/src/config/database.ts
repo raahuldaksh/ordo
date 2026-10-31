@@ -1,3 +1,4 @@
+import dns from 'dns';
 import mongoose from 'mongoose';
 import { config } from './env.js';
 import { logger } from './logger.js';
@@ -24,9 +25,19 @@ export async function connectDatabase(): Promise<string> {
     }
   }
 
+  // If using mongodb+srv on Windows/local networks where router DNS blocks SRV queries,
+  // configure reliable fallback DNS servers (Google / Cloudflare DNS)
+  if (uri.startsWith('mongodb+srv://')) {
+    try {
+      dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+    } catch {
+      // ignore
+    }
+  }
+
   try {
     await mongoose.connect(uri);
-    logger.info(`Connected to MongoDB: ${mongoose.connection.name}`);
+    logger.info(`Connected to MongoDB Atlas: ${mongoose.connection.name} (host: ${mongoose.connection.host})`);
     return uri;
   } catch (err: any) {
     logger.error('Failed to connect to MongoDB', { error: err.message });
@@ -46,4 +57,3 @@ export async function disconnectDatabase(): Promise<void> {
     logger.error('Error disconnecting MongoDB', { error: err.message });
   }
 }
-
