@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setUser(null);
       setPreferences(null);
-      localStorage.removeItem('ordo_token');
     } finally {
       setIsLoading(false);
     }
@@ -45,28 +44,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (credentials: any) => {
-    const res = await api.login(credentials);
-    if (res.tokens?.accessToken) {
-      localStorage.setItem('ordo_token', res.tokens.accessToken);
-    }
+    await api.login(credentials);
     await refreshUser();
     router.push('/dashboard');
   };
 
   const register = async (data: any) => {
-    const res = await api.register(data);
-    if (res.tokens?.accessToken) {
-      localStorage.setItem('ordo_token', res.tokens.accessToken);
-    }
+    await api.register(data);
     await refreshUser();
     router.push('/onboarding');
   };
 
   const googleLogin = async (data: any) => {
-    const res = await api.googleLogin(data);
-    if (res.tokens?.accessToken) {
-      localStorage.setItem('ordo_token', res.tokens.accessToken);
-    }
+    await api.googleLogin(data);
     await refreshUser();
     router.push('/dashboard');
   };
@@ -77,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
-    localStorage.removeItem('ordo_token');
     setUser(null);
     setPreferences(null);
     router.push('/login');
@@ -115,4 +104,3 @@ export function useAuth() {
   }
   return context;
 }
-

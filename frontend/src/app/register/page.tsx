@@ -19,7 +19,7 @@ export default function RegisterPage() {
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasLength = password.length >= 8;
+  const hasLength = password.length >= 12;
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
@@ -197,7 +197,7 @@ export default function RegisterPage() {
               {/* Password Security Criteria */}
               <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-1 text-[11px] font-mono">
                 <div className={`flex items-center gap-1.5 ${hasLength ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
-                  <Check className="h-3 w-3" /> Minimum 8 characters
+                  <Check className="h-3 w-3" /> Minimum 12 characters
                 </div>
                 <div className={`flex items-center gap-1.5 ${hasUpper && hasLower ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
                   <Check className="h-3 w-3" /> Uppercase and lowercase letters

@@ -4,6 +4,8 @@ import { config } from '../config/env.js';
 export interface TokenPayload {
   userId: string;
   email: string;
+  tokenVersion?: number;
+  sessionId?: string;
 }
 
 export function generateAccessToken(payload: TokenPayload): string {
@@ -33,4 +35,3 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
     return null;
   }
 }
-

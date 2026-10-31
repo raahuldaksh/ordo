@@ -1,24 +1,44 @@
 import { User, UserPreferences } from '../models/index.js';
-import { hashPassword, comparePassword, generateRandomToken } from '../utils/crypto.js';
+import { hashPassword, comparePassword, generateRandomToken, hashToken } from '../utils/crypto.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
+import { config } from '../config/env.js';
+import { v4 as uuidv4 } from 'uuid';
+import { OAuth2Client } from 'google-auth-library';
+import { logger } from '../config/logger.js';
+
+const googleClient = new OAuth2Client(config.googleClientId);
 
 export class AuthService {
   static async register(data: { fullName: string; email: string; password: string }) {
-    const existing = await User.findOne({ email: data.email.toLowerCase().trim() });
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       throw { status: 409, code: 'EMAIL_ALREADY_EXISTS', message: 'An account with this email address already exists.' };
     }
 
     const passwordHash = await hashPassword(data.password);
-    const verificationToken = generateRandomToken();
+    const rawVerificationToken = generateRandomToken();
+    const verificationTokenHash = hashToken(rawVerificationToken);
 
+    const sessionId = uuidv4();
     const user = await User.create({
       fullName: data.fullName.trim(),
-      email: data.email.toLowerCase().trim(),
+      email: normalizedEmail,
       passwordHash,
-      emailVerificationToken: verificationToken,
-      emailVerifiedAt: new Date(), // Auto-verify in development for seamless onboarding
-      accountStatus: 'ACTIVE'
+      emailVerificationTokenHash: verificationTokenHash,
+      emailVerificationExpires: new Date(Date.now() + 24 * 3600000), // 24 hours
+      emailVerifiedAt: new Date(), // Auto-verify in development, token hash stored for verification tests
+      accountStatus: 'ACTIVE',
+      tokenVersion: 1,
+      activeSessions: [
+        {
+          sessionId,
+          userAgent: 'Initial Registration',
+          ip: '127.0.0.1',
+          lastActiveAt: new Date(),
+          createdAt: new Date()
+        }
+      ]
     });
 
     // Create default UserPreferences matching PRD §7
@@ -33,7 +53,7 @@ export class AuthService {
       sleepTimeLocal: '23:00'
     });
 
-    const tokenPayload = { userId: user._id.toString(), email: user.email };
+    const tokenPayload = { userId: user._id.toString(), email: user.email, tokenVersion: user.tokenVersion, sessionId };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
@@ -44,13 +64,20 @@ export class AuthService {
         email: user.email,
         emailVerified: !!user.emailVerifiedAt
       },
-      tokens: { accessToken, refreshToken }
+      tokens: { accessToken, refreshToken },
+      // Plaintext token only returned if explicitly needed for test verification, NEVER stored plaintext in DB
+      rawVerificationToken: config.env === 'test' ? rawVerificationToken : undefined
     };
   }
 
-  static async login(data: { email: string; password: string }) {
-    const user = await User.findOne({ email: data.email.toLowerCase().trim() });
+  static async login(data: { email: string; password: string }, clientInfo?: { userAgent?: string; ip?: string }) {
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Timing-attack safe generic rejection
     if (!user || !user.passwordHash) {
+      // Perform dummy compare to prevent timing side-channels
+      await hashPassword('dummy-password-timing-safe-buffer');
       throw { status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' };
     }
 
@@ -58,12 +85,49 @@ export class AuthService {
       throw { status: 403, code: 'ACCOUNT_SUSPENDED', message: 'This account has been suspended.' };
     }
 
+    // Account lockout check
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      const waitMinutes = Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000);
+      throw {
+        status: 429,
+        code: 'ACCOUNT_TEMPORARILY_LOCKED',
+        message: `Account is temporarily locked due to repeated failed attempts. Please try again in ${waitMinutes} minutes.`
+      };
+    }
+
     const isMatch = await comparePassword(data.password, user.passwordHash);
     if (!isMatch) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute progressive lock
+        logger.warn('Account temporarily locked after 5 failed attempts', { userId: user._id });
+      }
+      await user.save();
       throw { status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' };
     }
 
-    const tokenPayload = { userId: user._id.toString(), email: user.email };
+    // Reset failed login counter on success
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+
+    // Track active session
+    const sessionId = uuidv4();
+    user.activeSessions.push({
+      sessionId,
+      userAgent: clientInfo?.userAgent || 'Unknown',
+      ip: clientInfo?.ip || 'Unknown',
+      lastActiveAt: new Date(),
+      createdAt: new Date()
+    });
+
+    // Keep max 10 active sessions
+    if (user.activeSessions.length > 10) {
+      user.activeSessions = user.activeSessions.slice(-10);
+    }
+
+    await user.save();
+
+    const tokenPayload = { userId: user._id.toString(), email: user.email, tokenVersion: user.tokenVersion, sessionId };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
@@ -79,7 +143,7 @@ export class AuthService {
   }
 
   static async getMe(userId: string) {
-    const user = await User.findById(userId).select('-passwordHash -resetPasswordToken -emailVerificationToken');
+    const user = await User.findById(userId).select('-passwordHash -resetPasswordTokenHash -emailVerificationTokenHash');
     if (!user) {
       throw { status: 404, code: 'USER_NOT_FOUND', message: 'User not found.' };
     }
@@ -88,26 +152,40 @@ export class AuthService {
   }
 
   static async forgotPassword(email: string) {
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    // Always return success message to avoid account enumeration
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Generic response to prevent account enumeration (PRD §5 & §6.4)
+    const genericResponse = {
+      message: 'If an account exists with this email, a password reset link has been sent.'
+    };
+
     if (!user) {
-      return { message: 'If an account exists with this email, a password reset link has been sent.' };
+      return genericResponse;
     }
 
-    const resetToken = generateRandomToken();
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    const rawResetToken = generateRandomToken();
+    const resetTokenHash = hashToken(rawResetToken);
+
+    user.resetPasswordTokenHash = resetTokenHash;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour expiry
     await user.save();
 
-    return {
-      message: 'If an account exists with this email, a password reset link has been sent.',
-      devResetToken: resetToken // Helpful for local testing
-    };
+    logger.info('Password reset token generated (hashed at rest)', { userId: user._id });
+
+    // In test or development environment, return rawResetToken for verification only
+    if (config.env === 'test' || config.env === 'development') {
+      return { ...genericResponse, devResetToken: rawResetToken, testResetToken: rawResetToken };
+    }
+
+    return genericResponse;
   }
 
-  static async resetPassword(token: string, newPassword: string) {
+  static async resetPassword(rawToken: string, newPassword: string) {
+    const tokenHash = hashToken(rawToken);
+
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordTokenHash: tokenHash,
       resetPasswordExpires: { $gt: new Date() }
     });
 
@@ -116,11 +194,18 @@ export class AuthService {
     }
 
     user.passwordHash = await hashPassword(newPassword);
-    user.resetPasswordToken = null;
+    user.resetPasswordTokenHash = null;
     user.resetPasswordExpires = null;
+    user.passwordChangedAt = new Date();
+
+    // Invalidate ALL previous sessions across all devices (PRD §3, §5)
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.activeSessions = [];
     await user.save();
 
-    return { message: 'Password reset successfully. You can now log in.' };
+    logger.info('Password reset completed; all active sessions revoked', { userId: user._id });
+
+    return { message: 'Password reset successfully. All active sessions have been revoked. Please log in.' };
   }
 
   static async changePassword(userId: string, currentPassword: string, newPassword: string) {
@@ -135,21 +220,82 @@ export class AuthService {
     }
 
     user.passwordHash = await hashPassword(newPassword);
+    user.passwordChangedAt = new Date();
+
+    // Revoke all existing sessions across devices
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.activeSessions = [];
     await user.save();
 
-    return { message: 'Password changed successfully.' };
+    logger.info('Password changed by user; session version rotated', { userId: user._id });
+
+    return { message: 'Password changed successfully. All other sessions have been logged out.' };
   }
 
-  static async handleGoogleAuth(googleUser: { googleId: string; email: string; fullName: string }) {
-    let user = await User.findOne({ email: googleUser.email.toLowerCase() });
+  static async verifyEmail(rawToken: string) {
+    const tokenHash = hashToken(rawToken);
+
+    const user = await User.findOne({
+      emailVerificationTokenHash: tokenHash,
+      emailVerificationExpires: { $gt: new Date() }
+    });
 
     if (!user) {
+      throw { status: 400, code: 'INVALID_OR_EXPIRED_TOKEN', message: 'Email verification token is invalid or has expired.' };
+    }
+
+    user.emailVerifiedAt = new Date();
+    user.emailVerificationTokenHash = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    return { message: 'Email verified successfully.' };
+  }
+
+  static async handleGoogleAuth(payload: { idToken?: string; googleId?: string; email?: string; fullName?: string }) {
+    let verifiedEmail = payload.email;
+    let verifiedName = payload.fullName || 'Google User';
+    let verifiedGoogleId = payload.googleId;
+
+    // Production Google ID Token Verification (PRD §4)
+    if (payload.idToken && config.googleClientId) {
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: payload.idToken,
+          audience: config.googleClientId
+        });
+        const googlePayload = ticket.getPayload();
+        if (!googlePayload || !googlePayload.email) {
+          throw new Error('Google token payload missing email');
+        }
+        verifiedEmail = googlePayload.email;
+        verifiedName = googlePayload.name || verifiedName;
+        verifiedGoogleId = googlePayload.sub;
+      } catch (err: any) {
+        logger.error('Google ID token verification failed', { error: err.message });
+        throw { status: 401, code: 'GOOGLE_TOKEN_INVALID', message: 'Invalid Google authentication token' };
+      }
+    } else if (config.env === 'production' && !payload.idToken) {
+      throw { status: 400, code: 'GOOGLE_TOKEN_REQUIRED', message: 'Google idToken is required in production' };
+    }
+
+    if (!verifiedEmail) {
+      throw { status: 400, code: 'INVALID_GOOGLE_PAYLOAD', message: 'Verified email is required' };
+    }
+
+    const normalizedEmail = verifiedEmail.toLowerCase().trim();
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      const sessionId = uuidv4();
       user = await User.create({
-        fullName: googleUser.fullName,
-        email: googleUser.email.toLowerCase(),
-        googleId: googleUser.googleId,
+        fullName: verifiedName,
+        email: normalizedEmail,
+        googleId: verifiedGoogleId,
         emailVerifiedAt: new Date(),
-        accountStatus: 'ACTIVE'
+        accountStatus: 'ACTIVE',
+        tokenVersion: 1,
+        activeSessions: [{ sessionId, userAgent: 'Google Sign-In', ip: '127.0.0.1', lastActiveAt: new Date(), createdAt: new Date() }]
       });
 
       await UserPreferences.create({
@@ -159,15 +305,19 @@ export class AuthService {
         timeFormat: '24h',
         weekStartsOn: 1
       });
-    } else if (!user.googleId) {
-      user.googleId = googleUser.googleId;
+    } else {
+      // Safe account linking: only link if verified (PRD §4)
+      if (!user.googleId) {
+        user.googleId = verifiedGoogleId;
+      }
       if (!user.emailVerifiedAt) {
         user.emailVerifiedAt = new Date();
       }
       await user.save();
     }
 
-    const tokenPayload = { userId: user._id.toString(), email: user.email };
+    const sessionId = uuidv4();
+    const tokenPayload = { userId: user._id.toString(), email: user.email, tokenVersion: user.tokenVersion, sessionId };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
@@ -181,5 +331,19 @@ export class AuthService {
       tokens: { accessToken, refreshToken }
     };
   }
-}
 
+  static async listSessions(userId: string) {
+    const user = await User.findById(userId).select('activeSessions tokenVersion');
+    if (!user) throw { status: 404, code: 'USER_NOT_FOUND', message: 'User not found' };
+    return user.activeSessions;
+  }
+
+  static async revokeAllSessions(userId: string) {
+    const user = await User.findById(userId);
+    if (!user) throw { status: 404, code: 'USER_NOT_FOUND', message: 'User not found' };
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.activeSessions = [];
+    await user.save();
+    return { success: true, message: 'All sessions revoked.' };
+  }
+}

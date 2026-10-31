@@ -15,6 +15,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -50,6 +59,15 @@ export default function SettingsPage() {
   // Password state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  // Re-auth states for export & delete
+  const [exportPassword, setExportPassword] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) setFullName(user.fullName);
@@ -112,9 +130,15 @@ export default function SettingsPage() {
     }
   };
 
-  const handleExportData = async () => {
+  const handleExportData = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!exportPassword) {
+      toast.error('Password confirmation is required to export personal data');
+      return;
+    }
+    setIsExporting(true);
     try {
-      const data = await api.exportUserData();
+      const data = await api.exportUserData(exportPassword);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -123,18 +147,31 @@ export default function SettingsPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Data exported successfully');
+      setIsExportDialogOpen(false);
+      setExportPassword('');
     } catch (err: any) {
       toast.error(err.message || 'Failed to export data');
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error('Password confirmation is required to permanently delete your account');
+      return;
+    }
+    setIsDeleting(true);
     try {
-      await api.deleteAccount();
-      toast.success('Account deleted successfully');
+      await api.deleteAccount(deletePassword);
+      toast.success('Account and all data deleted successfully');
+      setIsDeleteDialogOpen(false);
+      setDeletePassword('');
       logout();
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete account');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -277,12 +314,12 @@ export default function SettingsPage() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 8 chars, 1 uppercase, 1 number"
+                  placeholder="Min 12 chars, 1 uppercase, 1 lowercase, 1 number"
                 />
               </div>
             </div>
             <div className="flex justify-end pt-2">
-              <Button type="submit" size="sm" variant="outline" disabled={!currentPassword || !newPassword}>
+              <Button type="submit" size="sm" variant="outline" disabled={!currentPassword || newPassword.length < 12}>
                 Update Password
               </Button>
             </div>
@@ -304,23 +341,68 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Export Personal Data with re-authentication modal */}
           <div className="flex items-center justify-between p-3 rounded-lg border border-border">
             <div>
               <p className="text-sm font-medium">Export Personal Data</p>
               <p className="text-xs text-muted-foreground">Download full data snapshot including status history.</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleExportData} className="gap-1.5">
-              <Download className="h-4 w-4" /> Export JSON
-            </Button>
+            <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Download className="h-4 w-4" /> Export JSON
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleExportData}>
+                  <DialogHeader>
+                    <DialogTitle>Confirm Password to Export Data</DialogTitle>
+                    <DialogDescription>
+                      To protect your privacy and ensure security, please re-enter your password to download your full personal data archive.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2 py-4">
+                    <label className="text-xs font-semibold uppercase text-muted-foreground">
+                      Password Confirmation
+                    </label>
+                    <Input
+                      type="password"
+                      value={exportPassword}
+                      onChange={(e) => setExportPassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      className="text-xs"
+                      autoFocus
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsExportDialogOpen(false);
+                        setExportPassword('');
+                      }}
+                      disabled={isExporting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={!exportPassword || isExporting}>
+                      {isExporting ? 'Exporting...' : 'Verify & Export'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
 
+          {/* Delete Account with password re-authentication modal */}
           <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/40 bg-destructive/5">
             <div>
               <p className="text-sm font-medium text-destructive">Delete Account</p>
               <p className="text-xs text-muted-foreground">Permanently wipe all account data, tasks, outcomes, and routines.</p>
             </div>
 
-            <AlertDialog>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" className="gap-1.5">
                   <Trash2 className="h-4 w-4" /> Delete Account
@@ -333,11 +415,37 @@ export default function SettingsPage() {
                     This action cannot be undone. This will permanently delete your ORDO account, all scheduled tasks, outcome history, and routine templates.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="space-y-2 py-2">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">
+                    Confirm Password to Proceed
+                  </label>
+                  <Input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your current password"
+                    className="text-xs"
+                    autoFocus
+                  />
+                </div>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
-                    Yes, Permanently Delete
-                  </AlertDialogAction>
+                  <AlertDialogCancel
+                    onClick={() => {
+                      setIsDeleteDialogOpen(false);
+                      setDeletePassword('');
+                    }}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={!deletePassword || isDeleting}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Yes, Permanently Delete'}
+                  </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

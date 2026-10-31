@@ -1,7 +1,20 @@
 import winston from 'winston';
 import { config } from './env.js';
 
-const sensitiveKeys = ['password', 'passwordHash', 'token', 'refreshToken', 'accessToken', 'secret', 'actualReason'];
+const sensitiveKeys = [
+  'password',
+  'passwordhash',
+  'token',
+  'refreshtoken',
+  'accesstoken',
+  'secret',
+  'actualreason',
+  'authorization',
+  'cookie',
+  'mongodb_uri',
+  'description',
+  'apikey'
+];
 
 const maskSensitiveData = winston.format((info) => {
   const mask = (obj: any): any => {
@@ -9,7 +22,7 @@ const maskSensitiveData = winston.format((info) => {
     if (Array.isArray(obj)) return obj.map(mask);
     const masked: Record<string, any> = {};
     for (const key of Object.keys(obj)) {
-      if (sensitiveKeys.some(k => key.toLowerCase().includes(k.toLowerCase()))) {
+      if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
         masked[key] = '[REDACTED]';
       } else if (typeof obj[key] === 'object') {
         masked[key] = mask(obj[key]);

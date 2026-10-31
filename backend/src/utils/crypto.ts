@@ -18,6 +18,18 @@ export function generateRandomToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString('hex');
 }
 
+/**
+ * SHA-256 hash for single-use tokens (verification, password reset, CSRF)
+ * Ensures plaintext tokens are NEVER stored in the database (PRD §2, §5)
+ */
+export function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export function generateCsrfToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
 export function encryptToken(text: string): string {
   if (!text) return '';
   const iv = crypto.randomBytes(16);
@@ -37,4 +49,3 @@ export function decryptToken(encryptedText: string): string {
   decrypted += decipher.final('utf8');
   return decrypted;
 }
-

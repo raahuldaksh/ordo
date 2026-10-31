@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
                   </label>
                   <Input
                     type="password"
-                    placeholder="Min 8 chars, 1 uppercase, 1 number"
+                    placeholder="Min 12 chars, 1 uppercase, 1 lowercase, 1 number"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="text-xs"

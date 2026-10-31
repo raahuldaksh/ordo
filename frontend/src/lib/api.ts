@@ -18,32 +18,36 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : null;
+}
+
 class ApiClient {
-  private getAuthHeader(): Record<string, string> {
-    if (typeof window === 'undefined') return {};
-    const token = localStorage.getItem('ordo_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+  private getCsrfHeader(): Record<string, string> {
+    const csrfToken = getCookie('ordo_csrf_token');
+    return csrfToken ? { 'X-CSRF-Token': csrfToken } : {};
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
-      ...this.getAuthHeader(),
+      ...this.getCsrfHeader(),
       ...(options.headers || {})
     };
 
     const res = await fetch(url, {
       ...options,
       headers,
-      credentials: 'include'
+      credentials: 'include' // Strictly uses HttpOnly cookies (PRD §2.3 & §9)
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
       const errorMsg = data?.error?.message || `Request failed with status ${res.status}`;
-      const code = data?.error?.code || 'UNKNOWN_ERROR';
       throw new Error(errorMsg);
     }
 
@@ -52,21 +56,21 @@ class ApiClient {
 
   // Auth
   async register(body: any) {
-    return this.request<{ user: User; tokens: { accessToken: string; refreshToken: string } }>('/auth/register', {
+    return this.request<{ user: User }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body)
     });
   }
 
   async login(body: any) {
-    return this.request<{ user: User; tokens: { accessToken: string; refreshToken: string } }>('/auth/login', {
+    return this.request<{ user: User }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(body)
     });
   }
 
   async googleLogin(body: any) {
-    return this.request<{ user: User; tokens: { accessToken: string; refreshToken: string } }>('/auth/google', {
+    return this.request<{ user: User }>('/auth/google', {
       method: 'POST',
       body: JSON.stringify(body)
     });
@@ -94,11 +98,26 @@ class ApiClient {
     });
   }
 
+  async verifyEmail(token: string) {
+    return this.request<{ message: string }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token })
+    });
+  }
+
   async changePassword(body: any) {
     return this.request<{ message: string }>('/auth/change-password', {
       method: 'POST',
       body: JSON.stringify(body)
     });
+  }
+
+  async listSessions() {
+    return this.request<any[]>('/auth/sessions');
+  }
+
+  async revokeAllSessions() {
+    return this.request<{ message: string }>('/auth/sessions/revoke-all', { method: 'POST' });
   }
 
   // User & Preferences
@@ -120,12 +139,18 @@ class ApiClient {
     });
   }
 
-  async exportUserData() {
-    return this.request<any>('/users/me/export', { method: 'POST' });
+  async exportUserData(password?: string) {
+    return this.request<any>('/users/me/export', {
+      method: 'POST',
+      body: JSON.stringify({ password })
+    });
   }
 
-  async deleteAccount() {
-    return this.request<any>('/users/me', { method: 'DELETE' });
+  async deleteAccount(password?: string) {
+    return this.request<any>('/users/me', {
+      method: 'DELETE',
+      body: JSON.stringify({ password })
+    });
   }
 
   // Tasks
@@ -364,4 +389,3 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
-

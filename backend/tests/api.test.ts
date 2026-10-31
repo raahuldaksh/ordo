@@ -35,7 +35,7 @@ describe('ORDO Backend API Suite', () => {
       .send({
         fullName: 'Test User',
         email: 'test@ordo.app',
-        password: 'Password123'
+        password: 'SecurePass1234'
       });
 
     expect(res.status).toBe(201);
@@ -50,7 +50,7 @@ describe('ORDO Backend API Suite', () => {
       .post('/api/v1/auth/login')
       .send({
         email: 'test@ordo.app',
-        password: 'Password123'
+        password: 'SecurePass1234'
       });
 
     expect(res.status).toBe(200);
