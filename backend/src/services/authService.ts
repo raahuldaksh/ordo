@@ -6,7 +6,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { OAuth2Client } from 'google-auth-library';
 import { logger } from '../config/logger.js';
 
-const googleClient = new OAuth2Client(config.googleClientId);
+const getOAuth2Client = () => {
+  return new OAuth2Client(
+    config.googleClientId,
+    config.googleClientSecret,
+    config.googleCallbackUrl
+  );
+};
 
 export class AuthService {
   static async register(data: { fullName: string; email: string; password: string }) {
@@ -252,7 +258,10 @@ export class AuthService {
     return { message: 'Email verified successfully.' };
   }
 
-  static async handleGoogleAuth(payload: { idToken?: string; googleId?: string; email?: string; fullName?: string }) {
+  static async handleGoogleAuth(
+    payload: { idToken?: string; googleId?: string; email?: string; fullName?: string },
+    clientInfo?: { userAgent?: string; ip?: string }
+  ) {
     let verifiedEmail = payload.email;
     let verifiedName = payload.fullName || 'Google User';
     let verifiedGoogleId = payload.googleId;
@@ -260,7 +269,8 @@ export class AuthService {
     // Production Google ID Token Verification (PRD §4)
     if (payload.idToken && config.googleClientId) {
       try {
-        const ticket = await googleClient.verifyIdToken({
+        const client = getOAuth2Client();
+        const ticket = await client.verifyIdToken({
           idToken: payload.idToken,
           audience: config.googleClientId
         });
@@ -295,7 +305,13 @@ export class AuthService {
         emailVerifiedAt: new Date(),
         accountStatus: 'ACTIVE',
         tokenVersion: 1,
-        activeSessions: [{ sessionId, userAgent: 'Google Sign-In', ip: '127.0.0.1', lastActiveAt: new Date(), createdAt: new Date() }]
+        activeSessions: [{
+          sessionId,
+          userAgent: clientInfo?.userAgent || 'Google Sign-In',
+          ip: clientInfo?.ip || '127.0.0.1',
+          lastActiveAt: new Date(),
+          createdAt: new Date()
+        }]
       });
 
       await UserPreferences.create({
@@ -317,6 +333,18 @@ export class AuthService {
     }
 
     const sessionId = uuidv4();
+    user.activeSessions.push({
+      sessionId,
+      userAgent: clientInfo?.userAgent || 'Google Sign-In',
+      ip: clientInfo?.ip || '127.0.0.1',
+      lastActiveAt: new Date(),
+      createdAt: new Date()
+    });
+    if (user.activeSessions.length > 10) {
+      user.activeSessions = user.activeSessions.slice(-10);
+    }
+    await user.save();
+
     const tokenPayload = { userId: user._id.toString(), email: user.email, tokenVersion: user.tokenVersion, sessionId };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
@@ -330,6 +358,52 @@ export class AuthService {
       },
       tokens: { accessToken, refreshToken }
     };
+  }
+
+  static getGoogleAuthUrl(state?: string): string {
+    if (!config.googleClientId || !config.googleClientSecret) {
+      throw { status: 500, code: 'GOOGLE_OAUTH_NOT_CONFIGURED', message: 'Google OAuth client ID or secret is not configured in backend environment.' };
+    }
+    const client = getOAuth2Client();
+    return client.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'select_account',
+      scope: [
+        'openid',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+      ],
+      state: state || 'ordo_auth'
+    });
+  }
+
+  static async handleGoogleCallback(code: string, clientInfo?: { userAgent?: string; ip?: string }) {
+    if (!config.googleClientId || !config.googleClientSecret) {
+      throw { status: 500, code: 'GOOGLE_OAUTH_NOT_CONFIGURED', message: 'Google OAuth client ID or secret is not configured in backend environment.' };
+    }
+
+    const client = getOAuth2Client();
+    const { tokens } = await client.getToken(code);
+    if (!tokens.id_token) {
+      throw { status: 400, code: 'GOOGLE_NO_ID_TOKEN', message: 'No identity token returned by Google.' };
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: config.googleClientId
+    });
+
+    const googlePayload = ticket.getPayload();
+    if (!googlePayload || !googlePayload.email) {
+      throw { status: 400, code: 'INVALID_GOOGLE_PAYLOAD', message: 'Google token payload missing verified email.' };
+    }
+
+    return this.handleGoogleAuth({
+      idToken: tokens.id_token,
+      email: googlePayload.email,
+      fullName: googlePayload.name || 'Google User',
+      googleId: googlePayload.sub
+    }, clientInfo);
   }
 
   static async listSessions(userId: string) {

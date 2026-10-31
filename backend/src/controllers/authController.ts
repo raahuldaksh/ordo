@@ -4,6 +4,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
 import { generateCsrfToken } from '../utils/crypto.js';
 import { config } from '../config/env.js';
+import { logger } from '../config/logger.js';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -100,9 +101,50 @@ export class AuthController {
     }
   }
 
+  static redirectToGoogle(req: Request, res: Response): void {
+    try {
+      const state = req.query.state as string;
+      const url = AuthService.getGoogleAuthUrl(state);
+      res.redirect(url);
+    } catch (err: any) {
+      sendError(res, err.code || 'GOOGLE_AUTH_FAILED', err.message, err.status || 500);
+    }
+  }
+
+  static async handleGoogleCallback(req: Request, res: Response): Promise<void> {
+    try {
+      const code = req.query.code as string;
+      if (!code) {
+        res.redirect(`${config.frontendUrl}/login?error=missing_code`);
+        return;
+      }
+
+      const clientInfo = {
+        userAgent: req.headers['user-agent'],
+        ip: (req.ip || req.socket.remoteAddress) as string
+      };
+
+      const result = await AuthService.handleGoogleCallback(code, clientInfo);
+
+      // Set HttpOnly session cookies
+      res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
+      res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
+
+      // Redirect user directly into the dashboard
+      res.redirect(`${config.frontendUrl}/dashboard`);
+    } catch (err: any) {
+      logger.error('Google OAuth callback failed', { error: err.message });
+      res.redirect(`${config.frontendUrl}/login?error=google_auth_failed`);
+    }
+  }
+
   static async handleGoogleAuth(req: Request, res: Response): Promise<void> {
     try {
-      const result = await AuthService.handleGoogleAuth(req.body);
+      const clientInfo = {
+        userAgent: req.headers['user-agent'],
+        ip: (req.ip || req.socket.remoteAddress) as string
+      };
+      const result = await AuthService.handleGoogleAuth(req.body, clientInfo);
       res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
       res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
       sendSuccess(res, result);

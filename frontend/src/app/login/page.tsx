@@ -16,6 +16,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorParam = urlParams.get('error');
+      if (errorParam === 'google_auth_failed') {
+        toast.error('Google authentication failed. Please try again or use email sign in.');
+      } else if (errorParam === 'missing_code') {
+        toast.error('Authorization code missing from Google.');
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -33,20 +45,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleDemo = async () => {
-    setIsLoading(true);
-    try {
-      await googleLogin({
-        email: 'google.user@example.com',
-        fullName: 'Google User',
-        googleId: 'google_123456789'
-      });
-      toast.success('Signed in with Google');
-    } catch (err: any) {
-      toast.error(err.message || 'Google authentication failed');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleGoogleSignIn = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+    window.location.href = `${apiUrl}/auth/google`;
   };
 
   return (
@@ -70,9 +71,9 @@ export default function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleGoogleDemo}
+                onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full text-xs font-medium h-9 gap-2 shadow-xs"
+                className="w-full text-xs font-medium h-9 gap-2 shadow-xs cursor-pointer"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path

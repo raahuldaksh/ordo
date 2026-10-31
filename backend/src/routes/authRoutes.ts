@@ -27,6 +27,10 @@ router.post('/forgot-password', passwordResetLimiter, validateBody(forgotPasswor
 router.post('/reset-password', passwordResetLimiter, validateBody(resetPasswordSchema), AuthController.resetPassword);
 router.post('/change-password', requireAuth, validateBody(changePasswordSchema), AuthController.changePassword);
 router.post('/verify-email', validateBody(verifyEmailSchema), AuthController.verifyEmail);
+
+// Real Google OAuth 2.0 endpoints
+router.get('/google', authLimiter, AuthController.redirectToGoogle);
+router.get('/google/callback', AuthController.handleGoogleCallback);
 router.post('/google', authLimiter, AuthController.handleGoogleAuth);
 
 // Session management

@@ -55,20 +55,9 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleDemo = async () => {
-    setIsLoading(true);
-    try {
-      await googleLogin({
-        email: 'google.newuser@example.com',
-        fullName: 'New Google User',
-        googleId: `g_${Date.now()}`
-      });
-      toast.success('Account created with Google');
-    } catch (err: any) {
-      toast.error(err.message || 'Google registration failed');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleGoogleSignIn = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+    window.location.href = `${apiUrl}/auth/google`;
   };
 
   return (
@@ -92,9 +81,9 @@ export default function RegisterPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleGoogleDemo}
+                onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full text-xs font-medium h-9 gap-2 shadow-xs"
+                className="w-full text-xs font-medium h-9 gap-2 shadow-xs cursor-pointer"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path
