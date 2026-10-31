@@ -12,8 +12,8 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     csrfToken = generateCsrfToken();
     res.cookie('ordo_csrf_token', csrfToken, {
       httpOnly: false, // Must be readable by client JavaScript to set X-CSRF-Token header
-      secure: config.env === 'production',
-      sameSite: 'lax',
+      secure: config.env === 'production' || config.cookieSameSite === 'none',
+      sameSite: config.cookieSameSite,
       path: '/'
     });
   }
@@ -31,11 +31,16 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     if (origin) {
       try {
         const originUrl = new URL(origin);
-        const frontendUrl = new URL(config.frontendUrl);
-        const isAllowed =
-          originUrl.host === frontendUrl.host ||
-          originUrl.host === 'localhost:3000' ||
-          originUrl.host === '127.0.0.1:3000';
+        const allowedHosts = [
+          new URL(config.frontendUrl).host,
+          'localhost:3000',
+          '127.0.0.1:3000',
+          ...config.allowedOrigins.map(u => {
+            try { return new URL(u).host; } catch { return u; }
+          })
+        ];
+
+        const isAllowed = allowedHosts.includes(originUrl.host);
 
         if (!isAllowed) {
           sendError(res, 'CSRF_INVALID_ORIGIN', 'Origin validation failed for state-changing request', 403);

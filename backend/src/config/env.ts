@@ -6,6 +6,10 @@ export const config = {
   env: isJest ? 'test' : (process.env.NODE_ENV || 'development'),
   port: parseInt(process.env.PORT || '5000', 10),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  allowedOrigins: process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean)
+    : [],
+  cookieSameSite: ((process.env.COOKIE_SAME_SITE as any) || (isJest ? 'lax' : (process.env.NODE_ENV === 'production' ? 'none' : 'lax'))) as 'lax' | 'none' | 'strict',
   mongodbUri: process.env.MONGODB_URI || '',
   sessionSecret: process.env.SESSION_SECRET || 'ordo-super-secret-session-key-dev-32chars',
   jwtAccessSecret: process.env.ACCESS_TOKEN_SECRET || 'ordo-jwt-access-secret-32-chars-long-here-991',

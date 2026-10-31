@@ -16,6 +16,17 @@ import { sendError } from './utils/response.js';
 export function createApp() {
   const app = express();
 
+  // Trust reverse proxy (Render / Cloudflare) so req.ip and req.protocol are accurate (PRD §7)
+  app.set('trust proxy', 1);
+
+  // Normalize allowed origins
+  const allowedOrigins = [
+    config.frontendUrl.replace(/\/$/, ''),
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    ...config.allowedOrigins
+  ];
+
   // 1. Strict Security Headers (PRD §7)
   app.use(helmet({
     contentSecurityPolicy: {
@@ -25,7 +36,7 @@ export function createApp() {
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         fontSrc: ["'self'", "data:"],
-        connectSrc: ["'self'", config.frontendUrl, "http://localhost:3000"]
+        connectSrc: ["'self'", ...allowedOrigins]
       }
     },
     hsts: config.env === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
@@ -35,17 +46,12 @@ export function createApp() {
   }));
 
   // 2. Strict CORS Configuration (PRD §7 & §12)
-  const allowedOrigins = [
-    config.frontendUrl,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ];
-
   app.use(cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or server-to-server)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
       return callback(null, false);

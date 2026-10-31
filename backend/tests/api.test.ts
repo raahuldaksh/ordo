@@ -27,6 +27,15 @@ describe('ORDO Backend API Suite', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.database.status).toBe('connected');
+
+    const liveRes = await request(app).get('/api/v1/health/live');
+    expect(liveRes.status).toBe(200);
+    expect(liveRes.body.status).toBe('ok');
+
+    const readyRes = await request(app).get('/api/v1/health/ready');
+    expect(readyRes.status).toBe(200);
+    expect(readyRes.body.status).toBe('ready');
+    expect(readyRes.body.database).toBe('connected');
   });
 
   it('POST /api/v1/auth/register creates a user and returns access token', async () => {

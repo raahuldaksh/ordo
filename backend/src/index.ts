@@ -6,6 +6,12 @@ import { logger } from './config/logger.js';
 
 async function bootstrap() {
   try {
+    // 0. Production sanity checks
+    if (config.env === 'production' && !config.mongodbUri) {
+      logger.error('CRITICAL: MONGODB_URI must be set in production. Aborting process.');
+      process.exit(1);
+    }
+
     // 1. Connect to MongoDB (Atlas or in-memory fallback)
     await connectDatabase();
 
@@ -14,11 +20,12 @@ async function bootstrap() {
 
     // 3. Initialize Express application
     const app = createApp();
+    const host = '0.0.0.0';
 
-    const server = app.listen(config.port, () => {
-      logger.info(`ORDO Backend API listening on port ${config.port} (${config.env} mode)`);
-      logger.info(`Health check available at: http://localhost:${config.port}/api/v1/health`);
-      logger.info(`OpenAPI Swagger documentation available at: http://localhost:${config.port}/api/docs`);
+    const server = app.listen(config.port, host, () => {
+      logger.info(`ORDO Backend API listening on ${host}:${config.port} (${config.env} mode)`);
+      logger.info(`Health check available at: http://${host}:${config.port}/api/v1/health`);
+      logger.info(`OpenAPI Swagger documentation available at: http://${host}:${config.port}/api/docs`);
     });
 
     // Graceful shutdown handling

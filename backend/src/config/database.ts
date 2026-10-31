@@ -9,6 +9,11 @@ export async function connectDatabase(): Promise<string> {
   let uri = config.mongodbUri;
 
   if (!uri) {
+    if (config.env === 'production') {
+      const err = new Error('CRITICAL: MONGODB_URI is required in production environment. In-memory database is strictly disabled in production.');
+      logger.error(err.message);
+      throw err;
+    }
     logger.info('No MONGODB_URI provided. Initializing local in-memory MongoDB server...');
     try {
       const { MongoMemoryServer } = await import('mongodb-memory-server');

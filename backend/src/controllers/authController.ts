@@ -8,8 +8,8 @@ import { logger } from '../config/logger.js';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: config.env === 'production',
-  sameSite: 'lax' as const,
+  secure: config.env === 'production' || config.cookieSameSite === 'none',
+  sameSite: config.cookieSameSite,
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
@@ -159,8 +159,8 @@ export class AuthController {
       token = generateCsrfToken();
       res.cookie('ordo_csrf_token', token, {
         httpOnly: false,
-        secure: config.env === 'production',
-        sameSite: 'lax',
+        secure: config.env === 'production' || config.cookieSameSite === 'none',
+        sameSite: config.cookieSameSite,
         path: '/'
       });
     }

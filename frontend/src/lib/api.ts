@@ -25,12 +25,40 @@ function getCookie(name: string): string | null {
 }
 
 class ApiClient {
+  private inMemoryCsrfToken: string | null = null;
+
+  setCsrfToken(token: string) {
+    this.inMemoryCsrfToken = token;
+  }
+
   private getCsrfHeader(): Record<string, string> {
-    const csrfToken = getCookie('ordo_csrf_token');
+    const csrfToken = this.inMemoryCsrfToken || getCookie('ordo_csrf_token');
     return csrfToken ? { 'X-CSRF-Token': csrfToken } : {};
   }
 
+  async fetchCsrfToken(): Promise<string | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/csrf`, { credentials: 'include' });
+      if (res.ok) {
+        const json = await res.json();
+        const token = json?.data?.csrfToken || json?.csrfToken;
+        if (token) {
+          this.inMemoryCsrfToken = token;
+          return token;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const method = (options.method || 'GET').toUpperCase();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !this.inMemoryCsrfToken && !getCookie('ordo_csrf_token')) {
+      await this.fetchCsrfToken();
+    }
+
     const url = `${API_BASE_URL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
