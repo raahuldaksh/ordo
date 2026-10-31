@@ -1,0 +1,48 @@
+{
+  "name": "ordo-backend",
+  "version": "1.0.0",
+  "description": "ORDO - Modular Express & TypeScript Backend API",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "jest --detectOpenHandles --runInBand",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.13.1",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.13.10",
+    "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.4",
+    "supertest": "^7.1.0",
+    "ts-jest": "^29.2.6",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
+
