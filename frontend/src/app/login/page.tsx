@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBackendUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -50,9 +51,8 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = () => {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://ordo-z65h.onrender.com';
-    const cleanBaseUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
-    window.location.href = `${cleanBaseUrl}/api/v1/auth/google`;
+    const backendUrl = getBackendUrl();
+    window.location.assign(`${backendUrl}/api/v1/auth/google`);
   };
 
   return (

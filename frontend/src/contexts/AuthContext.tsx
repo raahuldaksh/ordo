@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (data: any) => Promise<void>;
   register: (data: any) => Promise<void>;
   googleLogin: (data: any) => Promise<void>;
+  demoLogin: () => Promise<void>;
   logout: () => Promise<void>;
   updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -28,6 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
+      // Check if token is present in URL query parameters (e.g. from OAuth redirect)
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const urlToken = params.get('token');
+        if (urlToken) {
+          api.setAuthToken(urlToken);
+          params.delete('token');
+          params.delete('refreshToken');
+          params.delete('refresh');
+          const cleanQuery = params.toString() ? `?${params.toString()}` : '';
+          window.history.replaceState({}, document.title, `${window.location.pathname}${cleanQuery}`);
+        }
+      }
+
       const data = await api.getMe();
       setUser(data.user);
       setPreferences(data.preferences);
@@ -61,12 +76,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/dashboard');
   };
 
+  const demoLogin = async () => {
+    try {
+      await api.demoLogin();
+    } catch {
+      await api.googleLogin({
+        email: 'demo@ordo.app',
+        fullName: 'ORDO Explorer',
+        googleId: 'ordo_demo_explorer'
+      });
+    }
+    await refreshUser();
+  };
+
   const logout = async () => {
     try {
       await api.logout();
     } catch {
       // ignore
     }
+    api.setAuthToken(null);
     setUser(null);
     setPreferences(null);
     router.push('/login');
@@ -87,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         googleLogin,
+        demoLogin,
         logout,
         updatePreferences,
         refreshUser

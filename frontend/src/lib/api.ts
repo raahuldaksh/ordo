@@ -16,7 +16,28 @@ import {
   ReasonCategory
 } from '../types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+export const getBackendUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://ordo-z65h.onrender.com';
+  }
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (envUrl && !envUrl.includes('localhost')) {
+    return envUrl.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+  }
+  return 'http://localhost:5000';
+};
+
+export const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://ordo-z65h.onrender.com/api/v1';
+  }
+  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost')) {
+    const clean = envUrl.replace(/\/$/, '');
+    return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
+  }
+  return 'http://localhost:5000/api/v1';
+};
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -26,9 +47,35 @@ function getCookie(name: string): string | null {
 
 class ApiClient {
   private inMemoryCsrfToken: string | null = null;
+  private inMemoryAuthToken: string | null = null;
 
   setCsrfToken(token: string) {
     this.inMemoryCsrfToken = token;
+  }
+
+  setAuthToken(token: string | null) {
+    this.inMemoryAuthToken = token;
+    if (typeof window !== 'undefined') {
+      if (token) {
+        try { localStorage.setItem('ordo_token', token); } catch {}
+      } else {
+        try { localStorage.removeItem('ordo_token'); } catch {}
+      }
+    }
+  }
+
+  getAuthToken(): string | null {
+    if (this.inMemoryAuthToken) return this.inMemoryAuthToken;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('ordo_token');
+        if (stored) {
+          this.inMemoryAuthToken = stored;
+          return stored;
+        }
+      } catch {}
+    }
+    return null;
   }
 
   private getCsrfHeader(): Record<string, string> {
@@ -38,7 +85,7 @@ class ApiClient {
 
   async fetchCsrfToken(): Promise<string | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/csrf`, { credentials: 'include' });
+      const res = await fetch(`${getApiBaseUrl()}/auth/csrf`, { credentials: 'include' });
       if (res.ok) {
         const json = await res.json();
         const token = json?.data?.csrfToken || json?.csrfToken;
@@ -59,17 +106,21 @@ class ApiClient {
       await this.fetchCsrfToken();
     }
 
-    const url = `${API_BASE_URL}${endpoint}`;
+    const token = this.getAuthToken();
+    const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    const url = `${getApiBaseUrl()}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
       ...this.getCsrfHeader(),
+      ...authHeaders,
       ...(options.headers || {})
     };
 
     const res = await fetch(url, {
       ...options,
       headers,
-      credentials: 'include' // Strictly uses HttpOnly cookies (PRD §2.3 & §9)
+      credentials: 'include' // Supports both cookies and Bearer tokens
     });
 
     const data = await res.json().catch(() => ({}));
@@ -84,27 +135,51 @@ class ApiClient {
 
   // Auth
   async register(body: any) {
-    return this.request<{ user: User }>('/auth/register', {
+    const res = await this.request<{ user: User; tokens?: { accessToken: string; refreshToken: string } }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body)
     });
+    if (res?.tokens?.accessToken) {
+      this.setAuthToken(res.tokens.accessToken);
+    }
+    return res;
   }
 
   async login(body: any) {
-    return this.request<{ user: User }>('/auth/login', {
+    const res = await this.request<{ user: User; tokens?: { accessToken: string; refreshToken: string } }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(body)
     });
+    if (res?.tokens?.accessToken) {
+      this.setAuthToken(res.tokens.accessToken);
+    }
+    return res;
   }
 
   async googleLogin(body: any) {
-    return this.request<{ user: User }>('/auth/google', {
+    const res = await this.request<{ user: User; tokens?: { accessToken: string; refreshToken: string } }>('/auth/google', {
       method: 'POST',
       body: JSON.stringify(body)
     });
+    if (res?.tokens?.accessToken) {
+      this.setAuthToken(res.tokens.accessToken);
+    }
+    return res;
+  }
+
+  async demoLogin() {
+    const res = await this.request<{ user: User; tokens?: { accessToken: string; refreshToken: string } }>('/auth/demo', {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+    if (res?.tokens?.accessToken) {
+      this.setAuthToken(res.tokens.accessToken);
+    }
+    return res;
   }
 
   async logout() {
+    this.setAuthToken(null);
     return this.request<{ message: string }>('/auth/logout', { method: 'POST' });
   }
 

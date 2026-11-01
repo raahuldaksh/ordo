@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading, googleLogin } = useAuth();
+  const { isAuthenticated, isLoading, googleLogin, demoLogin } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'plan' | 'track' | 'review'>('plan');
 
@@ -41,12 +41,16 @@ export default function HomePage() {
 
   const handleExploreDemo = async () => {
     try {
-      await googleLogin({
-        email: 'demo@ordo.app',
-        fullName: 'ORDO Explorer',
-        googleId: 'ordo_demo_explorer'
-      });
-      router.push('/dashboard');
+      if (demoLogin) {
+        await demoLogin();
+      } else {
+        await googleLogin({
+          email: 'demo@ordo.app',
+          fullName: 'ORDO Explorer',
+          googleId: 'ordo_demo_explorer'
+        });
+      }
+      router.push('/my-day');
     } catch {
       router.push('/login');
     }

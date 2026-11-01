@@ -146,13 +146,46 @@ export class AuthController {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
       });
 
-      // Redirect user directly into the dashboard
-      const FRONTEND_URL = process.env.FRONTEND_URL || config.frontendUrl || 'https://ordo-dusky.vercel.app';
-      res.redirect(`${FRONTEND_URL}/dashboard`);
+      // Dual Handoff (Cookie + URL Token Exchange) to support cross-domain Vercel frontend
+      const FRONTEND_URL = (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('localhost'))
+        ? process.env.FRONTEND_URL.replace(/\/$/, '')
+        : (process.env.RENDER || process.env.NODE_ENV === 'production'
+          ? 'https://ordo-dusky.vercel.app'
+          : (config.frontendUrl || 'https://ordo-dusky.vercel.app').replace(/\/$/, ''));
+
+      res.redirect(`${FRONTEND_URL}/oauth-callback?token=${encodeURIComponent(result.tokens.accessToken)}&refreshToken=${encodeURIComponent(result.tokens.refreshToken)}`);
     } catch (err: any) {
       logger.error('Google OAuth callback failed', { error: err.message });
-      const FRONTEND_URL = process.env.FRONTEND_URL || config.frontendUrl || 'https://ordo-dusky.vercel.app';
+      const FRONTEND_URL = (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('localhost'))
+        ? process.env.FRONTEND_URL.replace(/\/$/, '')
+        : (process.env.RENDER || process.env.NODE_ENV === 'production'
+          ? 'https://ordo-dusky.vercel.app'
+          : (config.frontendUrl || 'https://ordo-dusky.vercel.app').replace(/\/$/, ''));
       res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
+    }
+  }
+
+  static async demo(req: Request, res: Response): Promise<void> {
+    try {
+      const clientInfo = {
+        userAgent: req.headers['user-agent'],
+        ip: (req.ip || req.socket.remoteAddress) as string
+      };
+      const result = await AuthService.handleGoogleAuth({
+        email: 'demo@ordo.app',
+        fullName: 'ORDO Explorer',
+        googleId: 'ordo_demo_explorer'
+      }, clientInfo);
+      res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
+      res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
+      res.cookie('token', result.tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      });
+      sendSuccess(res, result);
+    } catch (err: any) {
+      sendError(res, err.code || 'DEMO_LOGIN_FAILED', err.message || 'Demo login failed', err.status || 500);
     }
   }
 

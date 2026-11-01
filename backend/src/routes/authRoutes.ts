@@ -32,6 +32,7 @@ router.post('/verify-email', validateBody(verifyEmailSchema), AuthController.ver
 router.get('/google', authLimiter, AuthController.redirectToGoogle);
 router.get('/google/callback', AuthController.handleGoogleCallback);
 router.post('/google', authLimiter, AuthController.handleGoogleAuth);
+router.post('/demo', authLimiter, AuthController.demo);
 
 // Session management
 router.get('/sessions', requireAuth, AuthController.listSessions);

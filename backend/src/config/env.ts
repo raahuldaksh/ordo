@@ -2,10 +2,14 @@ import dotenv from 'dotenv';
 const isJest = process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test';
 dotenv.config();
 
+const isProduction = Boolean(process.env.RENDER || process.env.NODE_ENV === 'production');
+
 export const config = {
   env: isJest ? 'test' : (process.env.NODE_ENV || 'development'),
   port: Number(process.env.PORT) || 10000,
-  frontendUrl: process.env.FRONTEND_URL || 'https://ordo-dusky.vercel.app',
+  frontendUrl: (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes('localhost'))
+    ? process.env.FRONTEND_URL.replace(/\/$/, '')
+    : (isProduction ? 'https://ordo-dusky.vercel.app' : (process.env.FRONTEND_URL || 'https://ordo-dusky.vercel.app').replace(/\/$/, '')),
   allowedOrigins: process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean)
     : [],
@@ -18,7 +22,9 @@ export const config = {
   jwtRefreshExpiry: '7d',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL || 'https://ordo-z65h.onrender.com/api/v1/auth/google/callback',
+  googleCallbackUrl: (process.env.GOOGLE_CALLBACK_URL && !process.env.GOOGLE_CALLBACK_URL.includes('localhost'))
+    ? process.env.GOOGLE_CALLBACK_URL
+    : (isProduction ? 'https://ordo-z65h.onrender.com/api/v1/auth/google/callback' : (process.env.GOOGLE_CALLBACK_URL || 'https://ordo-z65h.onrender.com/api/v1/auth/google/callback')),
   googleCalendarRedirectUrl: process.env.GOOGLE_CALENDAR_REDIRECT_URL || 'https://ordo-z65h.onrender.com/api/v1/calendar/google/callback',
   emailApiKey: process.env.EMAIL_PROVIDER_API_KEY || '',
   emailFrom: process.env.EMAIL_FROM || 'noreply@ordo.app',
@@ -26,4 +32,3 @@ export const config = {
   aiApiKey: process.env.AI_PROVIDER_API_KEY || '',
   encryptionKey: process.env.OAUTH_TOKEN_ENCRYPTION_KEY || '12345678901234567890123456789012'
 };
-

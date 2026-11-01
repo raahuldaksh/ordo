@@ -31,16 +31,19 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     if (origin) {
       try {
         const originUrl = new URL(origin);
+        let configuredHost = '';
+        try { configuredHost = new URL(config.frontendUrl).host; } catch {}
         const allowedHosts = [
-          new URL(config.frontendUrl).host,
+          configuredHost,
+          'ordo-dusky.vercel.app',
           'localhost:3000',
           '127.0.0.1:3000',
           ...config.allowedOrigins.map(u => {
             try { return new URL(u).host; } catch { return u; }
           })
-        ];
+        ].filter(Boolean);
 
-        const isAllowed = allowedHosts.includes(originUrl.host);
+        const isAllowed = allowedHosts.includes(originUrl.host) || (originUrl.host.endsWith('.vercel.app') && originUrl.host.includes('ordo'));
 
         if (!isAllowed) {
           sendError(res, 'CSRF_INVALID_ORIGIN', 'Origin validation failed for state-changing request', 403);

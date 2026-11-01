@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
-const backendTarget = (process.env.BACKEND_INTERNAL_URL || 'http://localhost:5000').replace(/\/$/, '');
+const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+const backendTarget = (
+  process.env.BACKEND_INTERNAL_URL ||
+  (isProd ? 'https://ordo-z65h.onrender.com' : 'http://localhost:5000')
+).replace(/\/$/, '');
 
 const nextConfig = {
   reactStrictMode: true,
@@ -16,4 +20,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
