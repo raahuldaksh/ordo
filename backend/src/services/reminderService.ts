@@ -4,7 +4,7 @@ import { ReminderStatus, ReminderChannel, ReminderType } from '../constants/enum
 import { NotificationService } from './notificationService.js';
 import { logger } from '../config/logger.js';
 
-let reminderInterval: NodeJS.Timeout | null = null;
+let reminderInterval: ReturnType<typeof setInterval> | null = null;
 
 export class ReminderService {
   static async listReminders(userId: string) {
