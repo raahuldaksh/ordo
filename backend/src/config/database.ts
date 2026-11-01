@@ -5,6 +5,23 @@ import { logger } from './logger.js';
 
 let mongodInstance: any = null;
 
+async function startInMemoryServer(): Promise<string> {
+  try {
+    // Dynamic runtime import to completely isolate in-memory server from production TypeScript compilation
+    const dynamicImport = new Function('specifier', 'return import(specifier)');
+    const { MongoMemoryServer } = await dynamicImport('mongodb-memory-server');
+    mongodInstance = await MongoMemoryServer.create({
+      instance: {
+        dbName: 'ordo'
+      }
+    });
+    return mongodInstance.getUri();
+  } catch (err: any) {
+    logger.error('Failed to start in-memory MongoDB server', { error: err.message });
+    throw err;
+  }
+}
+
 export async function connectDatabase(): Promise<string> {
   let uri = config.mongodbUri;
 
@@ -15,19 +32,8 @@ export async function connectDatabase(): Promise<string> {
       throw err;
     }
     logger.info('No MONGODB_URI provided. Initializing local in-memory MongoDB server...');
-    try {
-      const { MongoMemoryServer } = await import('mongodb-memory-server');
-      mongodInstance = await MongoMemoryServer.create({
-        instance: {
-          dbName: 'ordo'
-        }
-      });
-      uri = mongodInstance.getUri();
-      logger.info(`In-memory MongoDB initialized at: ${uri}`);
-    } catch (err: any) {
-      logger.error('Failed to start in-memory MongoDB server', { error: err.message });
-      throw err;
-    }
+    uri = await startInMemoryServer();
+    logger.info(`In-memory MongoDB initialized at: ${uri}`);
   }
 
   // If using mongodb+srv on Windows/local networks where router DNS blocks SRV queries,
@@ -51,11 +57,7 @@ export async function connectDatabase(): Promise<string> {
     }
     logger.warn('Atlas cluster unreachable (likely IP whitelist). Initializing in-memory MongoDB fallback for local development...');
     try {
-      const { MongoMemoryServer } = await import('mongodb-memory-server');
-      mongodInstance = await MongoMemoryServer.create({
-        instance: { dbName: 'ordo' }
-      });
-      const fallbackUri = mongodInstance.getUri();
+      const fallbackUri = await startInMemoryServer();
       await mongoose.connect(fallbackUri);
       logger.info(`Connected to in-memory MongoDB fallback at: ${fallbackUri}`);
       return fallbackUri;
