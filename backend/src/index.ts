@@ -6,27 +6,30 @@ import { logger } from './config/logger.js';
 
 async function bootstrap() {
   try {
-    // 0. Production sanity checks
-    if (config.env === 'production' && !config.mongodbUri) {
-      logger.error('CRITICAL: MONGODB_URI must be set in production. Aborting process.');
-      process.exit(1);
-    }
-
-    // 1. Connect to MongoDB (Atlas or in-memory fallback)
-    await connectDatabase();
-
-    // 2. Start Reminder Scheduler
-    ReminderService.startScheduler();
-
-    // 3. Initialize Express application
+    // 1. Initialize Express application first so HTTP port binds immediately for Render
     const app = createApp();
-    const host = '0.0.0.0';
+    const PORT = Number(process.env.PORT) || config.port || 10000;
+    const HOST = '0.0.0.0';
 
-    const server = app.listen(config.port, host, () => {
-      logger.info(`ORDO Backend API listening on ${host}:${config.port} (${config.env} mode)`);
-      logger.info(`Health check available at: http://${host}:${config.port}/api/v1/health`);
-      logger.info(`OpenAPI Swagger documentation available at: http://${host}:${config.port}/api/docs`);
+    // 2. Bind server to 0.0.0.0 and PORT (Render requirement)
+    const server = app.listen(PORT, HOST, () => {
+      console.log(`Server listening on port ${PORT} (${HOST})`);
+      logger.info(`ORDO Backend API listening on ${HOST}:${PORT} (${config.env} mode)`);
+      logger.info(`Health check available at: http://${HOST}:${PORT}/health`);
+      logger.info(`Root endpoint available at: http://${HOST}:${PORT}/`);
+      logger.info(`OpenAPI Swagger documentation available at: http://${HOST}:${PORT}/api/docs`);
     });
+
+    // 3. Non-blocking Database Connection: allows HTTP server to immediately answer Render health checks
+    connectDatabase()
+      .then(() => {
+        logger.info('MongoDB connected successfully');
+        ReminderService.startScheduler();
+      })
+      .catch((err: any) => {
+        console.error('MongoDB connection error during startup:', err);
+        logger.error('MongoDB connection error during startup:', { error: err.message });
+      });
 
     // Graceful shutdown handling
     const shutdown = async (signal: string) => {
@@ -42,10 +45,12 @@ async function bootstrap() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (err: any) {
+    console.error('Failed to initialize server:', err);
     logger.error('Failed to initialize server', { error: err.message, stack: err.stack });
     process.exit(1);
   }
 }
 
 bootstrap();
+
 
