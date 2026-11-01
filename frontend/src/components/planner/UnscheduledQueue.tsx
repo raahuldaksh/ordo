@@ -70,7 +70,7 @@ export function UnscheduledQueue({ tasks }: UnscheduledQueueProps) {
   };
 
   return (
-    <div className="w-80 flex flex-col h-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+    <div className="w-full flex flex-col h-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-border bg-card/60">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">

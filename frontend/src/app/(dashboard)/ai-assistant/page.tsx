@@ -61,7 +61,7 @@ export default function AiAssistantPage() {
         <Button
           onClick={() => generateMutation.mutate()}
           disabled={generateMutation.isPending}
-          className="gap-1.5 font-medium"
+          className="gap-1.5 font-medium w-full sm:w-auto h-9 text-xs"
         >
           <Sparkles className="h-4 w-4" />
           {generateMutation.isPending ? 'Analyzing Metrics...' : 'Generate New Insight'}

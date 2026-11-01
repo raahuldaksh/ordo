@@ -100,7 +100,7 @@ export function TaskStatusModal() {
 
   return (
     <Dialog open={!!statusModalTask} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="w-full sm:max-w-[480px] max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Record Task Outcome</DialogTitle>
           <p className="text-xs text-muted-foreground truncate font-mono">
@@ -253,11 +253,11 @@ export function TaskStatusModal() {
             </div>
           </div>
 
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit" disabled={updateStatusMutation.isPending}>
+            <Button type="submit" disabled={updateStatusMutation.isPending} className="w-full sm:w-auto">
               {updateStatusMutation.isPending ? 'Saving...' : 'Save Outcome'}
             </Button>
           </DialogFooter>

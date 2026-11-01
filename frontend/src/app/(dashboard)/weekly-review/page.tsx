@@ -94,11 +94,11 @@ export default function WeeklyReviewPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             onClick={() => saveReviewMutation.mutate()}
             disabled={saveReviewMutation.isPending}
-            className="gap-1.5 font-medium"
+            className="gap-1.5 font-medium w-full sm:w-auto h-9 text-xs"
           >
             <Save className="h-4 w-4" />
             {saveReviewMutation.isPending ? 'Saving...' : 'Save Review'}

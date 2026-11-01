@@ -63,14 +63,14 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Range Selector */}
-        <div className="flex rounded-lg border border-border p-0.5 bg-card">
+        <div className="w-full sm:w-auto grid grid-cols-3 sm:flex rounded-lg border border-border p-0.5 bg-card">
           {(['7d', '30d', '90d'] as const).map((r) => (
             <Button
               key={r}
               variant={range === r ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setRange(r)}
-              className="h-8 px-3 text-xs font-mono font-medium uppercase"
+              className="h-8 px-2 sm:px-3 text-xs font-mono font-medium uppercase"
             >
               Last {r.replace('d', ' Days')}
             </Button>
@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Top Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="p-4 pb-2">
             <CardDescription className="text-xs font-mono font-semibold uppercase">

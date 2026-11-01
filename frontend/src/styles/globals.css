@@ -53,13 +53,18 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground antialiased selection:bg-foreground selection:text-background;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+    min-height: 100dvh;
   }
 }
 
-/* Custom minimal scrollbar */
+/* Custom sleek scrollbar for Windows / Chrome / Safari / Edge */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -68,11 +73,27 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
+  background: rgba(150, 150, 150, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: rgba(150, 150, 150, 0.45);
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Prevent iOS Safari / Mobile browser auto-zoom on input focus */
+@media screen and (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Subtle motion & micro-interactions */
@@ -127,4 +148,3 @@
     transform: none !important;
   }
 }
-

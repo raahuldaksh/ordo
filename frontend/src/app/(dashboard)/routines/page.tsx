@@ -102,9 +102,9 @@ export default function RoutinesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routines'] });
-      toast.success('Routine item added');
-      setItemTitle('');
+      toast.success('Item added to routine');
       setActiveTemplateForItems(null);
+      setItemTitle('');
     }
   });
 
@@ -113,7 +113,7 @@ export default function RoutinesPage() {
       api.deleteRoutineItem(templateId, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routines'] });
-      toast.success('Item removed');
+      toast.success('Routine block removed');
     }
   });
 
@@ -139,26 +139,26 @@ export default function RoutinesPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Routine Templates</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Routine Templates</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Design reusable daily rhythms and weekly schedules, then apply them with conflict resolution.
           </p>
         </div>
 
-        <Button onClick={() => setCreateOpen(true)} className="gap-1.5 font-medium">
+        <Button onClick={() => setCreateOpen(true)} className="gap-1.5 font-medium w-full sm:w-auto h-9 text-xs">
           <Plus className="h-4 w-4" /> Create Routine
         </Button>
       </div>
 
       {/* Routine Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
         {routines.map((routine) => (
           <Card key={routine._id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
+            <CardHeader className="p-4 sm:p-5 pb-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <CardTitle className="text-base font-semibold">{routine.name}</CardTitle>
@@ -166,13 +166,13 @@ export default function RoutinesPage() {
                     {routine.description || 'No description provided'}
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                <Badge variant="outline" className="text-[10px] uppercase font-mono shrink-0">
                   {routine.templateType}
                 </Badge>
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-3">
+            <CardContent className="p-4 sm:p-5 pt-0 space-y-3">
               <div className="flex items-center justify-between text-xs text-muted-foreground border-y border-border/40 py-2">
                 <span>{routine.items?.length || 0} scheduled blocks</span>
                 <Button
@@ -192,7 +192,7 @@ export default function RoutinesPage() {
                     key={item._id}
                     className="flex items-center justify-between p-2 rounded-md bg-muted/30 border border-border/40 text-xs group"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold truncate">{item.title}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">
                         {item.startTimeLocal} – {item.endTimeLocal} ({item.taskType})
@@ -202,7 +202,7 @@ export default function RoutinesPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => deleteItemMutation.mutate({ templateId: routine._id, itemId: item._id })}
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -211,7 +211,7 @@ export default function RoutinesPage() {
               </div>
             </CardContent>
 
-            <CardFooter className="pt-3 border-t border-border flex items-center justify-between gap-2">
+            <CardFooter className="p-4 sm:p-5 pt-3 border-t border-border flex items-center justify-between gap-2">
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
@@ -247,7 +247,7 @@ export default function RoutinesPage() {
 
       {/* Create Routine Modal */}
       <Dialog open={isCreateOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent className="w-full sm:max-w-[420px] max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>New Routine Template</DialogTitle>
           </DialogHeader>
@@ -281,7 +281,7 @@ export default function RoutinesPage() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button onClick={() => createRoutineMutation.mutate()} disabled={!templateName.trim() || createRoutineMutation.isPending}>
               Create Routine
@@ -292,7 +292,7 @@ export default function RoutinesPage() {
 
       {/* Add Item Modal */}
       <Dialog open={!!activeTemplateForItems} onOpenChange={(open) => !open && setActiveTemplateForItems(null)}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent className="w-full sm:max-w-[440px] max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Add Routine Time Block</DialogTitle>
           </DialogHeader>
@@ -348,7 +348,7 @@ export default function RoutinesPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setActiveTemplateForItems(null)}>Cancel</Button>
             <Button onClick={() => addItemMutation.mutate()} disabled={!itemTitle.trim() || addItemMutation.isPending}>
               Add Item
@@ -359,7 +359,7 @@ export default function RoutinesPage() {
 
       {/* Apply Routine Dialog */}
       <Dialog open={!!applyTemplate} onOpenChange={(open) => !open && setApplyTemplate(null)}>
-        <DialogContent className="sm:max-w-[460px]">
+        <DialogContent className="w-full sm:max-w-[460px] max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Apply Routine: {applyTemplate?.name}</DialogTitle>
           </DialogHeader>
@@ -395,7 +395,7 @@ export default function RoutinesPage() {
               </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setApplyTemplate(null)}>Cancel</Button>
             <Button onClick={() => applyRoutineMutation.mutate()} disabled={applyRoutineMutation.isPending}>
               {applyRoutineMutation.isPending ? 'Applying...' : 'Apply Routine'}
@@ -406,4 +406,3 @@ export default function RoutinesPage() {
     </div>
   );
 }
-

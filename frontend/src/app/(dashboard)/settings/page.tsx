@@ -342,18 +342,18 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Export Personal Data with re-authentication modal */}
-          <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-border">
             <div>
               <p className="text-sm font-medium">Export Personal Data</p>
               <p className="text-xs text-muted-foreground">Download full data snapshot including status history.</p>
             </div>
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="outline" size="sm" className="gap-1.5 w-full sm:w-auto shrink-0">
                   <Download className="h-4 w-4" /> Export JSON
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="w-full sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
                 <form onSubmit={handleExportData}>
                   <DialogHeader>
                     <DialogTitle>Confirm Password to Export Data</DialogTitle>
@@ -396,7 +396,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Delete Account with password re-authentication modal */}
-          <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/40 bg-destructive/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-destructive/40 bg-destructive/5">
             <div>
               <p className="text-sm font-medium text-destructive">Delete Account</p>
               <p className="text-xs text-muted-foreground">Permanently wipe all account data, tasks, outcomes, and routines.</p>
@@ -404,11 +404,11 @@ export default function SettingsPage() {
 
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="gap-1.5">
+                <Button variant="destructive" size="sm" className="gap-1.5 w-full sm:w-auto shrink-0">
                   <Trash2 className="h-4 w-4" /> Delete Account
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="w-full sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>

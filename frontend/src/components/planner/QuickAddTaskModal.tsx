@@ -130,7 +130,7 @@ export function QuickAddTaskModal() {
 
   return (
     <Dialog open={isQuickAddOpen} onOpenChange={setQuickAddOpen}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="w-full sm:max-w-[480px] max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Create New Task</DialogTitle>
         </DialogHeader>
@@ -283,11 +283,11 @@ export function QuickAddTaskModal() {
               />
             </div>
 
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={handleClose}>
+            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" disabled={createTaskMutation.isPending}>
+              <Button type="submit" disabled={createTaskMutation.isPending} className="w-full sm:w-auto">
                 {createTaskMutation.isPending ? 'Saving...' : 'Create Task'}
               </Button>
             </DialogFooter>

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { Header } from '@/components/layout/Header';
+import { MobileNavDrawer } from '@/components/layout/MobileNavDrawer';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { QuickAddTaskModal } from '@/components/planner/QuickAddTaskModal';
 import { TaskStatusModal } from '@/components/planner/TaskStatusModal';
 
@@ -38,14 +40,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-[100dvh] w-screen overflow-hidden bg-background">
+      {/* Desktop & Tablet Sidebar */}
       <AppSidebar />
+
+      {/* Main Workspace Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 pb-24 md:pb-6 min-w-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile Drawer & Bottom Navigation */}
+      <MobileNavDrawer />
+      <MobileBottomNav />
 
       {/* Global Modals */}
       <QuickAddTaskModal />
@@ -53,4 +62,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
-

@@ -85,77 +85,79 @@ export default function TasksPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Task Directory</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Task Directory</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Manage, filter, and track execution outcomes across all tasks.
           </p>
         </div>
 
-        <Button onClick={() => setQuickAddOpen(true)} className="gap-1.5 font-medium">
+        <Button onClick={() => setQuickAddOpen(true)} className="gap-1.5 font-medium w-full sm:w-auto h-9 text-xs">
           <Plus className="h-4 w-4" /> Create Task
         </Button>
       </div>
 
-      {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-card p-3 rounded-xl border border-border shadow-xs">
-        <div className="relative">
+      {/* Filter Bar: Row 1 Search, Row 2 Filters on mobile; 4-col on desktop */}
+      <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 bg-card p-2.5 sm:p-3 rounded-xl border border-border shadow-xs">
+        <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by title or tag..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 text-xs h-9"
+            className="pl-8 text-xs h-9 w-full"
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="text-xs h-9">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Statuses</SelectItem>
-            <SelectItem value="SUCCESS">Success</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="HALF">Half</SelectItem>
-            <SelectItem value="FAILED">Failed</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="text-xs h-9 sm:w-36">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Statuses</SelectItem>
+              <SelectItem value="SUCCESS">Success</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="HALF">Half</SelectItem>
+              <SelectItem value="FAILED">Failed</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="text-xs h-9">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Types</SelectItem>
-            <SelectItem value="FIXED">Fixed</SelectItem>
-            <SelectItem value="FLEXIBLE">Flexible</SelectItem>
-            <SelectItem value="UNPLANNED">Unplanned</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="text-xs h-9 sm:w-32">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Types</SelectItem>
+              <SelectItem value="FIXED">Fixed</SelectItem>
+              <SelectItem value="FLEXIBLE">Flexible</SelectItem>
+              <SelectItem value="UNPLANNED">Unplanned</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="text-xs h-9">
-            <SelectValue placeholder="All Priorities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Priorities</SelectItem>
-            <SelectItem value="LOW">Low</SelectItem>
-            <SelectItem value="MEDIUM">Medium</SelectItem>
-            <SelectItem value="HIGH">High</SelectItem>
-            <SelectItem value="URGENT">Urgent</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="text-xs h-9 sm:w-32">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Priorities</SelectItem>
+              <SelectItem value="LOW">Low</SelectItem>
+              <SelectItem value="MEDIUM">Medium</SelectItem>
+              <SelectItem value="HIGH">High</SelectItem>
+              <SelectItem value="URGENT">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Task List */}
       <Card>
         <CardContent className="p-0">
           {tasks.length === 0 ? (
-            <div className="p-12 text-center text-xs text-muted-foreground">
+            <div className="p-8 sm:p-12 text-center text-xs text-muted-foreground">
               No tasks match your selected criteria.
             </div>
           ) : (
@@ -163,7 +165,7 @@ export default function TasksPage() {
               {tasks.map((task) => (
                 <div
                   key={task._id}
-                  className="p-4 flex items-center justify-between gap-4 hover:bg-muted/30 transition-colors group"
+                  className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 transition-colors group"
                 >
                   <div
                     onClick={() => setStatusModalTask(task)}
@@ -176,8 +178,8 @@ export default function TasksPage() {
                       {task.status === 'PENDING' && <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
                     </div>
 
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 space-y-1 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <span className="text-sm font-semibold truncate group-hover:underline">
                           {task.title}
                         </span>
@@ -198,12 +200,12 @@ export default function TasksPage() {
                         >
                           {task.status}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px] uppercase font-mono hidden sm:inline-block">
+                        <Badge variant="outline" className="text-[10px] uppercase font-mono hidden xs:inline-block">
                           {task.priority}
                         </Badge>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground font-mono">
                         <span>{formatTimeRange(task.scheduledStartAt, task.scheduledEndAt)}</span>
                         <span>•</span>
                         <span>{task.durationMinutes} mins</span>
@@ -225,19 +227,19 @@ export default function TasksPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/30">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setStatusModalTask(task)}
-                      className="text-xs h-8"
+                      className="text-xs h-8 flex-1 sm:flex-initial"
                     >
                       Update Outcome
                     </Button>
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 touch-manipulation">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -267,4 +269,3 @@ export default function TasksPage() {
     </div>
   );
 }
-

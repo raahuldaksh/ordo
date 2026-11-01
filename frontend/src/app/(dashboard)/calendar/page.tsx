@@ -102,18 +102,18 @@ export default function CalendarPage() {
   const googleConnection = connections.find(c => c.provider === 'GOOGLE');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Calendar</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Unified view of ORDO scheduled commitments and external calendar events.
           </p>
         </div>
 
         {/* View Switcher and Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           <div className="flex rounded-lg border border-border p-0.5 bg-card">
             {(['day', 'week', 'month'] as const).map((v) => (
               <Button
@@ -121,23 +121,23 @@ export default function CalendarPage() {
                 variant={view === v ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView(v)}
-                className="h-8 px-3 text-xs capitalize font-medium"
+                className="h-8 px-2.5 sm:px-3 text-xs capitalize font-medium"
               >
                 {v}
               </Button>
             ))}
           </div>
 
-          <Button size="sm" onClick={() => setQuickAddOpen(true)} className="gap-1.5 font-medium">
-            <Plus className="h-4 w-4" /> Add Task
+          <Button size="sm" onClick={() => setQuickAddOpen(true)} className="gap-1.5 font-medium h-8 text-xs">
+            <Plus className="h-3.5 w-3.5" /> Add Task
           </Button>
         </div>
       </div>
 
       {/* Google Calendar Integration Sync Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border border-border bg-card/60 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-3.5 rounded-xl border border-border bg-card/60 gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="h-2 w-2 rounded-full bg-foreground" />
+          <div className="h-2 w-2 rounded-full bg-foreground shrink-0" />
           <div className="text-xs">
             <span className="font-semibold">Google Calendar Integration: </span>
             {googleConnection ? (
@@ -160,7 +160,7 @@ export default function CalendarPage() {
               size="sm"
               onClick={() => syncMutation.mutate(googleConnection._id)}
               disabled={syncMutation.isPending}
-              className="text-xs h-8 gap-1.5 font-medium"
+              className="text-xs h-8 gap-1.5 font-medium w-full sm:w-auto"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
               Sync Now
@@ -171,7 +171,7 @@ export default function CalendarPage() {
               variant="outline"
               onClick={() => connectGoogleMutation.mutate()}
               disabled={connectGoogleMutation.isPending}
-              className="text-xs h-8 gap-1.5 font-medium"
+              className="text-xs h-8 gap-1.5 font-medium w-full sm:w-auto"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Connect Google Calendar
@@ -182,18 +182,18 @@ export default function CalendarPage() {
 
       {/* Date Header Controller */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <Button variant="outline" size="icon" onClick={handlePrev} className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} className="h-8 text-xs font-medium">
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} className="h-8 px-2.5 text-xs font-medium">
             Today
           </Button>
           <Button variant="outline" size="icon" onClick={handleNext} className="h-8 w-8">
             <ChevronRight className="h-4 w-4" />
           </Button>
 
-          <span className="text-sm font-semibold ml-2 font-mono">
+          <span className="text-xs sm:text-sm font-semibold ml-1 sm:ml-2 font-mono">
             {format(currentDate, view === 'month' ? 'MMMM yyyy' : 'MMM d, yyyy')}
           </span>
         </div>
@@ -201,120 +201,124 @@ export default function CalendarPage() {
 
       {/* Calendar Grid Views */}
       {view === 'week' && (
-        <div className="grid grid-cols-7 gap-3">
-          {eachDayOfInterval({
-            start: startOfWeek(currentDate, { weekStartsOn: 1 }),
-            end: endOfWeek(currentDate, { weekStartsOn: 1 })
-          }).map((day, idx) => {
-            const dayKey = format(day, 'yyyy-MM-dd');
-            const dayEvents = events.filter((e) => isSameDay(parseISO(e.start), day));
-            const isCurrentDay = isSameDay(day, new Date());
+        <div className="overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar">
+          <div className="grid grid-cols-7 gap-2 sm:gap-3 min-w-[700px] md:min-w-0">
+            {eachDayOfInterval({
+              start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+              end: endOfWeek(currentDate, { weekStartsOn: 1 })
+            }).map((day, idx) => {
+              const dayKey = format(day, 'yyyy-MM-dd');
+              const dayEvents = events.filter((e) => isSameDay(parseISO(e.start), day));
+              const isCurrentDay = isSameDay(day, new Date());
 
-            return (
-              <Card
-                key={idx}
-                className={`min-h-[420px] flex flex-col ${isCurrentDay ? 'border-foreground shadow-sm' : ''}`}
-              >
-                <div
-                  onClick={() => {
-                    setSelectedDate(dayKey);
-                  }}
-                  className="p-3 border-b border-border/60 bg-muted/20 flex flex-col items-center cursor-pointer hover:bg-muted/40 transition-colors"
+              return (
+                <Card
+                  key={idx}
+                  className={`min-h-[380px] sm:min-h-[420px] flex flex-col ${isCurrentDay ? 'border-foreground shadow-sm' : ''}`}
                 >
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono">
-                    {format(day, 'EEE')}
-                  </span>
-                  <span
-                    className={`text-sm font-bold mt-0.5 h-6 w-6 rounded-full flex items-center justify-center ${
-                      isCurrentDay ? 'bg-foreground text-background' : ''
-                    }`}
+                  <div
+                    onClick={() => {
+                      setSelectedDate(dayKey);
+                    }}
+                    className="p-2 sm:p-3 border-b border-border/60 bg-muted/20 flex flex-col items-center cursor-pointer hover:bg-muted/40 transition-colors"
                   >
-                    {format(day, 'd')}
-                  </span>
-                </div>
-
-                <div className="flex-1 p-2 space-y-1.5 overflow-y-auto">
-                  {dayEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={`p-2 rounded-md border text-xs space-y-0.5 ${
-                        event.source === 'GOOGLE'
-                          ? 'border-dashed border-border bg-muted/30'
-                          : 'border-border bg-card shadow-xs'
+                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono">
+                      {format(day, 'EEE')}
+                    </span>
+                    <span
+                      className={`text-sm font-bold mt-0.5 h-6 w-6 rounded-full flex items-center justify-center ${
+                        isCurrentDay ? 'bg-foreground text-background' : ''
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-semibold truncate">{event.title}</span>
-                        <Badge variant="outline" className="text-[9px] h-3.5 px-1 font-mono">
-                          {event.source}
-                        </Badge>
+                      {format(day, 'd')}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 p-1.5 sm:p-2 space-y-1.5 overflow-y-auto">
+                    {dayEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className={`p-1.5 sm:p-2 rounded-md border text-xs space-y-0.5 ${
+                          event.source === 'GOOGLE'
+                            ? 'border-dashed border-border bg-muted/30'
+                            : 'border-border bg-card shadow-xs'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-semibold truncate text-[11px] sm:text-xs">{event.title}</span>
+                          <Badge variant="outline" className="text-[9px] h-3.5 px-1 font-mono shrink-0">
+                            {event.source}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">
+                          {format(parseISO(event.start), 'HH:mm')}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        {format(parseISO(event.start), 'HH:mm')}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            );
-          })}
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {view === 'month' && (
-        <Card className="p-4">
-          <div className="grid grid-cols-7 gap-1">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <div key={day} className="p-2 text-center text-xs font-semibold uppercase text-muted-foreground font-mono">
-                {day}
-              </div>
-            ))}
-
-            {eachDayOfInterval({
-              start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
-              end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 })
-            }).map((day, idx) => {
-              const dayEvents = events.filter((e) => isSameDay(parseISO(e.start), day));
-              const isCurrMonth = isSameMonth(day, currentDate);
-              const isTodayDay = isSameDay(day, new Date());
-
-              return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
-                  className={`min-h-[90px] p-2 border border-border/40 rounded-lg hover:bg-muted/30 cursor-pointer transition-colors ${
-                    !isCurrMonth ? 'opacity-30' : ''
-                  } ${isTodayDay ? 'border-foreground font-bold' : ''}`}
-                >
-                  <div className="flex justify-between items-center text-xs font-mono">
-                    <span className={isTodayDay ? 'text-foreground underline' : 'text-muted-foreground'}>
-                      {format(day, 'd')}
-                    </span>
-                    {dayEvents.length > 0 && (
-                      <span className="text-[10px] text-muted-foreground">{dayEvents.length}</span>
-                    )}
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    {dayEvents.slice(0, 2).map((ev) => (
-                      <div key={ev.id} className="text-[10px] truncate px-1 py-0.5 rounded bg-muted">
-                        {ev.title}
-                      </div>
-                    ))}
-                    {dayEvents.length > 2 && (
-                      <div className="text-[9px] text-muted-foreground font-mono">
-                        +{dayEvents.length - 2} more
-                      </div>
-                    )}
-                  </div>
+        <Card className="p-3 sm:p-4 overflow-hidden">
+          <div className="overflow-x-auto pb-2 -mx-1 px-1 sm:mx-0 sm:px-0 no-scrollbar">
+            <div className="grid grid-cols-7 gap-1 min-w-[580px] md:min-w-0">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                <div key={day} className="p-1.5 sm:p-2 text-center text-xs font-semibold uppercase text-muted-foreground font-mono">
+                  {day}
                 </div>
-              );
-            })}
+              ))}
+
+              {eachDayOfInterval({
+                start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
+                end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 })
+              }).map((day, idx) => {
+                const dayEvents = events.filter((e) => isSameDay(parseISO(e.start), day));
+                const isCurrMonth = isSameMonth(day, currentDate);
+                const isTodayDay = isSameDay(day, new Date());
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
+                    className={`min-h-[75px] sm:min-h-[90px] p-1.5 sm:p-2 border border-border/40 rounded-lg hover:bg-muted/30 cursor-pointer transition-colors ${
+                      !isCurrMonth ? 'opacity-30' : ''
+                    } ${isTodayDay ? 'border-foreground font-bold' : ''}`}
+                  >
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className={isTodayDay ? 'text-foreground underline' : 'text-muted-foreground'}>
+                        {format(day, 'd')}
+                      </span>
+                      {dayEvents.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground">{dayEvents.length}</span>
+                      )}
+                    </div>
+                    <div className="mt-1 space-y-1">
+                      {dayEvents.slice(0, 2).map((ev) => (
+                        <div key={ev.id} className="text-[10px] truncate px-1 py-0.5 rounded bg-muted">
+                          {ev.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <div className="text-[9px] text-muted-foreground font-mono">
+                          +{dayEvents.length - 2} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Card>
       )}
 
       {view === 'day' && (
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div className="space-y-3">
             <h3 className="text-sm font-semibold font-mono">Events for {format(currentDate, 'EEEE, MMMM d, yyyy')}</h3>
             {events.length === 0 ? (
@@ -340,4 +344,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-

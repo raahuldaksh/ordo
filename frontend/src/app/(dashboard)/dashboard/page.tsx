@@ -208,7 +208,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 3. KPI Metric Cards Grid ("Today at a Glance") */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {/* Planned Tasks */}
         <Card className="card-hover">
           <CardHeader className="p-4 pb-2">
@@ -305,12 +305,12 @@ export default function DashboardPage() {
         </div>
 
         {/* 24 Hour blocks */}
-        <div className="grid grid-cols-24 gap-1 h-5 pt-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 h-5 pt-1 w-full">
           {hourOccupancy.map((count, h) => (
             <div
               key={h}
               title={`${h.toString().padStart(2, '0')}:00 — ${count > 0 ? `${count} task(s)` : 'Available'}`}
-              className={`rounded-xs transition-colors cursor-pointer ${
+              className={`flex-1 h-full rounded-xs transition-colors cursor-pointer ${
                 count > 0
                   ? 'bg-foreground hover:bg-foreground/80'
                   : 'bg-muted/40 hover:bg-muted/70'

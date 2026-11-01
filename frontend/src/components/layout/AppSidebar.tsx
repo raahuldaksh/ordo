@@ -39,7 +39,7 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "relative flex flex-col border-r border-border bg-card/60 backdrop-blur transition-all duration-300 z-30 select-none",
+        "relative hidden md:flex flex-col border-r border-border bg-card/60 backdrop-blur transition-all duration-300 z-30 select-none",
         sidebarCollapsed ? "w-16" : "w-64"
       )}
     >
@@ -88,7 +88,7 @@ export function AppSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 group",
                 isActive
-                  ? "bg-foreground text-background shadow-sm font-semibold"
+                  ? "bg-foreground text-background shadow-xs font-semibold"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 sidebarCollapsed && "justify-center px-2"
               )}
@@ -118,4 +118,3 @@ export function AppSidebar() {
     </aside>
   );
 }
-
