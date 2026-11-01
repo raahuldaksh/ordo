@@ -64,10 +64,10 @@ ORDO/
 
 ## 2. GitHub Configuration & Target Repository
 
-- **Target Repository URL:** `https://github.com/raahuldaksh/ORDO` (or `ordo`)
+- **Target Repository URL:** `https://github.com/raahuldaksh/ordo`
 - **Remote Configuration:**
   - Name: `origin`
-  - URL: `https://github.com/raahuldaksh/ORDO.git`
+  - URL: `https://github.com/raahuldaksh/ordo.git`
   - Authenticated User: `Raahuldaksh`
 - **Security Check:**
   - `.gitignore` verified active.
