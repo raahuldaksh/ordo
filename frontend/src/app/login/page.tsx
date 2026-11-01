@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, googleLogin } = useAuth();
@@ -32,6 +32,10 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email || !password) {
       toast.error('Please enter email and password');
+      return;
+    }
+    if (password.length > 8) {
+      toast.error('Password cannot exceed 8 characters');
       return;
     }
     setIsLoading(true);
@@ -142,17 +146,25 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
+                    maxLength={8}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9 pr-9 text-xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {password.length > 8 && (
+                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> Password cannot exceed 8 characters
+                  </p>
+                )}
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full h-9 text-xs font-semibold mt-2">

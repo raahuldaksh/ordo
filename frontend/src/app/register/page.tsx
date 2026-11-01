@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Lock, Mail, User, Check, AlertCircle } from 'lucide-react';
+import { Lock, Mail, User, Check, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
   const { register, googleLogin } = useAuth();
@@ -16,10 +16,12 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasLength = password.length >= 12;
+  const hasLength = password.length >= 8 && password.length <= 8;
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
@@ -29,6 +31,14 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!fullName || !email || !password) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+    if (password.length > 8) {
+      toast.error('Password cannot exceed 8 characters');
+      return;
+    }
+    if (confirmPassword.length > 8) {
+      toast.error('Confirm password cannot exceed 8 characters');
       return;
     }
     if (password !== confirmPassword) {
@@ -157,13 +167,28 @@ export default function RegisterPage() {
                 <div className="relative">
                   <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
+                    maxLength={8}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 text-xs"
+                    className="pl-9 pr-9 text-xs"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+                {password.length > 8 && (
+                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> Password cannot exceed 8 characters
+                  </p>
+                )}
               </div>
 
               {/* Confirm Password */}
@@ -174,19 +199,34 @@ export default function RegisterPage() {
                 <div className="relative">
                   <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={confirmPassword}
+                    maxLength={8}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-9 text-xs"
+                    className="pl-9 pr-9 text-xs"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                    className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+                {confirmPassword.length > 8 && (
+                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> Confirm password cannot exceed 8 characters
+                  </p>
+                )}
               </div>
 
               {/* Password Security Criteria */}
               <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-1 text-[11px] font-mono">
                 <div className={`flex items-center gap-1.5 ${hasLength ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
-                  <Check className="h-3 w-3" /> Minimum 12 characters
+                  <Check className="h-3 w-3" /> Minimum 8 characters (max 8)
                 </div>
                 <div className={`flex items-center gap-1.5 ${hasUpper && hasLower ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
                   <Check className="h-3 w-3" /> Uppercase and lowercase letters
