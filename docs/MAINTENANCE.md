@@ -101,3 +101,4 @@ mongorestore --uri="mongodb+srv://<user>:<password>@<host>/ordo?retryWrites=true
 ### Scenario B: Google OAuth Fails (`redirect_uri_mismatch`)
 - **Symptoms**: User clicks "Continue with Google" and receives an error `400 redirect_uri_mismatch`.
 - **Remediation**: Verify that `GOOGLE_CALLBACK_URL` in Render exactly matches the registered URI in Google Cloud Console (including `https://` protocol and no trailing slash).
+

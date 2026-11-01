@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import { config } from './config/env.js';
@@ -61,18 +62,21 @@ export function createApp() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-CSRF-Token']
   }));
 
-  // 3. Request parsing with body size limits to prevent DoS (PRD §7)
+  // 3. Response payload compression (Gzip / Deflate for fast mobile & high-latency performance)
+  app.use(compression());
+
+  // 4. Request parsing with body size limits to prevent DoS (PRD §7)
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
-  // 4. NoSQL Operator Injection Defense (PRD §7 & §8)
+  // 5. NoSQL Operator Injection Defense (PRD §7 & §8)
   app.use(noSqlSanitize);
 
-  // 5. CSRF Protection for cookie-authenticated state mutations (PRD §7)
+  // 6. CSRF Protection for cookie-authenticated state mutations (PRD §7)
   app.use(csrfProtection);
 
-  // 6. Request correlation & logging
+  // 7. Request correlation & logging
   app.use(requestLogger);
 
   // 7. Swagger Documentation (Public API exploration)

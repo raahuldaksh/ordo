@@ -11,7 +11,8 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             refetchOnWindowFocus: false,
             retry: 1,
-            staleTime: 30000
+            staleTime: 60 * 1000, // 1 minute fresh cache for instant page/tab transitions
+            gcTime: 10 * 60 * 1000 // 10 minutes garbage collection in memory
           }
         }
       })

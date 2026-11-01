@@ -56,3 +56,4 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 # Generate 16-byte hex string (exactly 32 characters for OAUTH_TOKEN_ENCRYPTION_KEY)
 node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
 ```
+

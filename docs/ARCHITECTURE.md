@@ -92,3 +92,4 @@ The target production infrastructure is structured as follows:
 6. **Rate Limiting:** Distinct rate-limiting tiers via `express-rate-limit`:
    - Auth endpoints (`/login`, `/register`, `/forgot-password`): 15 requests per 15 minutes.
    - General API endpoints: 500 requests per 15 minutes.
+

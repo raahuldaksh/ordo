@@ -3,6 +3,8 @@ const backendTarget = (process.env.BACKEND_INTERNAL_URL || 'http://localhost:500
 
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
   async rewrites() {
     return [
       {
