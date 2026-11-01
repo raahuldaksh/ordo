@@ -10,7 +10,7 @@ const getOAuth2Client = () => {
   return new OAuth2Client(
     config.googleClientId,
     config.googleClientSecret,
-    config.googleCallbackUrl
+    process.env.GOOGLE_CALLBACK_URL || config.googleCallbackUrl || 'https://ordo-z65h.onrender.com/api/v1/auth/google/callback'
   );
 };
 

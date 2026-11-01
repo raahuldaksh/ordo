@@ -66,8 +66,9 @@ export default function RegisterPage() {
   };
 
   const handleGoogleSignIn = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
-    window.location.href = `${apiUrl}/auth/google`;
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://ordo-z65h.onrender.com';
+    const cleanBaseUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+    window.location.href = `${cleanBaseUrl}/api/v1/auth/google`;
   };
 
   return (

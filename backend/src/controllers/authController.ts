@@ -20,6 +20,11 @@ export class AuthController {
       const result = await AuthService.register(req.body);
       res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
       res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
+      res.cookie('token', result.tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      });
       sendSuccess(res, result, {}, 201);
     } catch (err: any) {
       sendError(res, err.code || 'REGISTRATION_FAILED', err.message || 'Registration failed', err.status || 400);
@@ -35,6 +40,11 @@ export class AuthController {
       const result = await AuthService.login(req.body, clientInfo);
       res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
       res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
+      res.cookie('token', result.tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      });
       sendSuccess(res, result);
     } catch (err: any) {
       sendError(res, err.code || 'LOGIN_FAILED', err.message || 'Login failed', err.status || 400);
@@ -115,7 +125,8 @@ export class AuthController {
     try {
       const code = req.query.code as string;
       if (!code) {
-        res.redirect(`${config.frontendUrl}/login?error=missing_code`);
+        const FRONTEND_URL = process.env.FRONTEND_URL || config.frontendUrl || 'https://ordo-dusky.vercel.app';
+        res.redirect(`${FRONTEND_URL}/login?error=missing_code`);
         return;
       }
 
@@ -129,12 +140,19 @@ export class AuthController {
       // Set HttpOnly session cookies
       res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
       res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
+      res.cookie('token', result.tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      });
 
       // Redirect user directly into the dashboard
-      res.redirect(`${config.frontendUrl}/dashboard`);
+      const FRONTEND_URL = process.env.FRONTEND_URL || config.frontendUrl || 'https://ordo-dusky.vercel.app';
+      res.redirect(`${FRONTEND_URL}/dashboard`);
     } catch (err: any) {
       logger.error('Google OAuth callback failed', { error: err.message });
-      res.redirect(`${config.frontendUrl}/login?error=google_auth_failed`);
+      const FRONTEND_URL = process.env.FRONTEND_URL || config.frontendUrl || 'https://ordo-dusky.vercel.app';
+      res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
     }
   }
 
@@ -147,6 +165,11 @@ export class AuthController {
       const result = await AuthService.handleGoogleAuth(req.body, clientInfo);
       res.cookie('ordo_access_token', result.tokens.accessToken, { ...COOKIE_OPTIONS, maxAge: 15 * 60 * 1000 });
       res.cookie('ordo_refresh_token', result.tokens.refreshToken, COOKIE_OPTIONS);
+      res.cookie('token', result.tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      });
       sendSuccess(res, result);
     } catch (err: any) {
       sendError(res, err.code || 'GOOGLE_AUTH_FAILED', err.message, err.status || 400);
