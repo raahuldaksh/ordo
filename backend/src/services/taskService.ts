@@ -171,8 +171,8 @@ export class TaskService {
       throw { status: 404, code: 'TASK_NOT_FOUND', message: 'Task not found or unauthorized' };
     }
 
-    let newStartAt = original.scheduledStartAt;
-    let newEndAt = original.scheduledEndAt;
+    let newStartAt = null;
+    let newEndAt = null;
 
     if (targetDate && original.scheduledStartAt && original.scheduledEndAt) {
       const origStart = new Date(original.scheduledStartAt);

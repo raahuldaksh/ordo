@@ -93,9 +93,26 @@ export function TaskStatusModal() {
       queryClient.setQueryData(['planner-day', selectedDate], (old: any) => {
         if (!old) return old;
         const updateTaskItem = (t: any) => t._id === taskId ? { ...t, status: targetStatus } : t;
+        const updatedAllScheduled = (old.allScheduled || []).map(updateTaskItem);
+        const total = updatedAllScheduled.length;
+        const successCount = updatedAllScheduled.filter((t: any) => t.status === 'SUCCESS').length;
+        const halfCount = updatedAllScheduled.filter((t: any) => t.status === 'HALF').length;
+        const failedCount = updatedAllScheduled.filter((t: any) => t.status === 'FAILED').length;
+        const pendingCount = updatedAllScheduled.filter((t: any) => t.status === 'PENDING').length;
+        const completionRate = total > 0 ? Math.round(((successCount + halfCount * 0.5) / total) * 100) : 0;
+
         return {
           ...old,
-          allScheduled: (old.allScheduled || []).map(updateTaskItem),
+          metrics: {
+            ...(old.metrics || {}),
+            totalScheduled: total,
+            successCount,
+            halfCount,
+            failedCount,
+            pendingCount,
+            completionRate
+          },
+          allScheduled: updatedAllScheduled,
           scheduled: {
             fixed: (old.scheduled?.fixed || []).map(updateTaskItem),
             flexible: (old.scheduled?.flexible || []).map(updateTaskItem),
@@ -126,9 +143,10 @@ export function TaskStatusModal() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['planner-day'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['tasks'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['weekly-review'], refetchType: 'active' });
     }
   });
 
@@ -237,7 +255,7 @@ export function TaskStatusModal() {
             <div className="space-y-3 rounded-lg border border-border p-3.5 bg-muted/20 animate-in fade-in-50 duration-200">
               <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <Info className="h-3.5 w-3.5" />
-                <span>Understand the obstacle (PRD §8.4)</span>
+                <span>Understand the obstacle</span>
               </div>
 
               {/* Predefined Category */}

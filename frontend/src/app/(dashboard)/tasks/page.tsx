@@ -62,9 +62,40 @@ export default function TasksPage() {
 
   const duplicateMutation = useMutation({
     mutationFn: (id: string) => api.duplicateTask(id),
-    onSuccess: () => {
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const currentQueryKey = ['tasks', search, statusFilter, typeFilter, priorityFilter];
+      const previousTasks = queryClient.getQueryData(currentQueryKey);
+
+      const original = (previousTasks as any[] | undefined)?.find((t) => t._id === id);
+      if (original) {
+        const optimisticDuplicate = {
+          ...original,
+          _id: `temp-${Date.now()}`,
+          title: `${original.title} (Copy)`.substring(0, 200),
+          status: 'PENDING',
+          scheduledStartAt: undefined,
+          scheduledEndAt: undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        queryClient.setQueryData(currentQueryKey, (old: any) =>
+          Array.isArray(old) ? [optimisticDuplicate, ...old] : [optimisticDuplicate]
+        );
+      }
+
+      toast.success('Task duplicated successfully');
+      return { previousTasks, currentQueryKey };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousTasks && context?.currentQueryKey) {
+        queryClient.setQueryData(context.currentQueryKey, context.previousTasks);
+      }
+      toast.error('Failed to duplicate task');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Task duplicated');
+      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
     }
   });
 

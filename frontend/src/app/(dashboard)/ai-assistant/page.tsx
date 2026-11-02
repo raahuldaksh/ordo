@@ -72,7 +72,7 @@ export default function AiAssistantPage() {
       <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-muted/20 text-xs">
         <ShieldCheck className="h-5 w-5 text-foreground shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-semibold text-foreground">Transparent & Advisory Design (PRD §8.8)</p>
+          <p className="font-semibold text-foreground">AI Assistant Transparency</p>
           <p className="text-muted-foreground leading-relaxed">
             AI output is advisory, not guaranteed truth. Suggestions highlight supporting metrics and recurring friction patterns.
             ORDO will <strong>never</strong> auto-reschedule, auto-delete, or auto-complete your tasks without your explicit confirmation.

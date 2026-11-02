@@ -69,17 +69,41 @@ export default function DashboardPage() {
     }
   });
 
-  const metrics = schedule?.metrics || {
-    totalScheduled: 0,
-    successCount: 0,
-    pendingCount: 0,
-    failedCount: 0,
-    halfCount: 0,
-    completionRate: 0,
-    plannedMinutes: 0
-  };
-
   const tasks = schedule?.allScheduled || [];
+
+  // Derive metrics reactively from current tasks for instant zero-latency UI synchronization
+  const metrics = React.useMemo(() => {
+    const rawMetrics = schedule?.metrics || {
+      totalScheduled: 0,
+      successCount: 0,
+      pendingCount: 0,
+      failedCount: 0,
+      halfCount: 0,
+      completionRate: 0,
+      plannedMinutes: 0
+    };
+
+    if (!tasks.length) return rawMetrics;
+
+    const total = tasks.length;
+    const successCount = tasks.filter((t) => t.status === 'SUCCESS').length;
+    const halfCount = tasks.filter((t) => t.status === 'HALF').length;
+    const failedCount = tasks.filter((t) => t.status === 'FAILED').length;
+    const pendingCount = tasks.filter((t) => t.status === 'PENDING').length;
+    const completionRate = total > 0 ? Math.round(((successCount + halfCount * 0.5) / total) * 100) : 0;
+    const plannedMinutes = tasks.reduce((acc, t) => acc + (t.durationMinutes || 0), 0) || rawMetrics.plannedMinutes;
+
+    return {
+      ...rawMetrics,
+      totalScheduled: total,
+      successCount,
+      halfCount,
+      failedCount,
+      pendingCount,
+      completionRate,
+      plannedMinutes
+    };
+  }, [schedule?.metrics, tasks]);
   const latestInsight = aiInsights.length > 0 ? aiInsights[0] : null;
   const plannedHours = Number((metrics.plannedMinutes / 60).toFixed(1));
 

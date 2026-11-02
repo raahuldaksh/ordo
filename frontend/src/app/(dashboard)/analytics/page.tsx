@@ -173,7 +173,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold uppercase font-mono tracking-wider">
-              Missed Task Obstacles (PRD §8.4)
+              Missed Task Obstacles
             </CardTitle>
             <CardDescription className="text-xs">
               Predefined obstacle categories recorded for Failed and Half tasks.

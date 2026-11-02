@@ -59,12 +59,23 @@ export default function RoutinesPage() {
       templateType,
       description: templateDesc
     }),
-    onSuccess: () => {
+    onSuccess: (newRoutine: any) => {
       queryClient.invalidateQueries({ queryKey: ['routines'] });
-      toast.success('Routine created');
+      toast.success('Routine created successfully');
       setCreateOpen(false);
       setTemplateName('');
       setTemplateDesc('');
+      setTemplateType('DAILY');
+      setTimeout(() => {
+        if (newRoutine?._id) {
+          const el = document.getElementById(`routine-${newRoutine._id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-primary', 'transition-all', 'duration-500');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 2000);
+          }
+        }
+      }, 250);
     }
   });
 
@@ -157,7 +168,7 @@ export default function RoutinesPage() {
       {/* Routine Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
         {routines.map((routine) => (
-          <Card key={routine._id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
+          <Card key={routine._id} id={`routine-${routine._id}`} className="flex flex-col justify-between hover:shadow-md transition-shadow">
             <CardHeader className="p-4 sm:p-5 pb-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -375,10 +386,10 @@ export default function RoutinesPage() {
               </div>
             </div>
 
-            {/* Conflict Strategy per PRD §8.6 */}
+            {/* Schedule Conflict Handling */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase text-muted-foreground">
-                Conflict Strategy (PRD §8.6)
+                Schedule Conflict Handling
               </label>
               <Select value={conflictStrategy} onValueChange={(v) => setConflictStrategy(v as ConflictStrategy)}>
                 <SelectTrigger>
