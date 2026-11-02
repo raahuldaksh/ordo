@@ -22,7 +22,7 @@ export default function RegisterPage() {
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasLength = password.length >= 8 && password.length <= 8;
+  const hasLength = password.length >= 8;
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
@@ -34,12 +34,8 @@ export default function RegisterPage() {
       toast.error('Please fill in all required fields');
       return;
     }
-    if (password.length > 8) {
-      toast.error('Password cannot exceed 8 characters');
-      return;
-    }
-    if (confirmPassword.length > 8) {
-      toast.error('Confirm password cannot exceed 8 characters');
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
       return;
     }
     if (password !== confirmPassword) {
@@ -171,7 +167,6 @@ export default function RegisterPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
-                    maxLength={8}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9 pr-9 text-xs"
                   />
@@ -185,11 +180,6 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {password.length > 8 && (
-                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="h-3 w-3" /> Password cannot exceed 8 characters
-                  </p>
-                )}
               </div>
 
               {/* Confirm Password */}
@@ -203,7 +193,6 @@ export default function RegisterPage() {
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={confirmPassword}
-                    maxLength={8}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pl-9 pr-9 text-xs"
                   />
@@ -217,17 +206,12 @@ export default function RegisterPage() {
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {confirmPassword.length > 8 && (
-                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="h-3 w-3" /> Confirm password cannot exceed 8 characters
-                  </p>
-                )}
               </div>
 
               {/* Password Security Criteria */}
               <div className="p-3 rounded-lg border border-border bg-muted/20 space-y-1 text-[11px] font-mono">
                 <div className={`flex items-center gap-1.5 ${hasLength ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
-                  <Check className="h-3 w-3" /> Minimum 8 characters (max 8)
+                  <Check className="h-3 w-3" /> Minimum 8 characters
                 </div>
                 <div className={`flex items-center gap-1.5 ${hasUpper && hasLower ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
                   <Check className="h-3 w-3" /> Uppercase and lowercase letters

@@ -35,8 +35,8 @@ export default function LoginPage() {
       toast.error('Please enter email and password');
       return;
     }
-    if (password.length > 8) {
-      toast.error('Password cannot exceed 8 characters');
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
       return;
     }
     setIsLoading(true);
@@ -147,7 +147,6 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
-                    maxLength={8}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9 pr-9 text-xs"
                   />
@@ -161,11 +160,6 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {password.length > 8 && (
-                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="h-3 w-3" /> Password cannot exceed 8 characters
-                  </p>
-                )}
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full h-9 text-xs font-semibold mt-2">
