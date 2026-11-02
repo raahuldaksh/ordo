@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, UserPreferences } from '@/types/api';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -16,7 +16,7 @@ interface AuthContextType {
   demoLogin: () => Promise<void>;
   logout: () => Promise<void>;
   updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async (): Promise<User | null> => {
     try {
       // Check if token is present in URL query parameters (e.g. from OAuth redirect)
       if (typeof window !== 'undefined') {
@@ -35,28 +35,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const urlToken = params.get('token');
         if (urlToken) {
           api.setAuthToken(urlToken);
-          params.delete('token');
-          params.delete('refreshToken');
-          params.delete('refresh');
-          const cleanQuery = params.toString() ? `?${params.toString()}` : '';
-          window.history.replaceState({}, document.title, `${window.location.pathname}${cleanQuery}`);
+          // Only clean URL query params if we are NOT on /oauth-callback (let oauth-callback orchestrate its own lifecycle)
+          if (!window.location.pathname.includes('/oauth-callback')) {
+            params.delete('token');
+            params.delete('refreshToken');
+            params.delete('refresh');
+            const cleanQuery = params.toString() ? `?${params.toString()}` : '';
+            window.history.replaceState({}, document.title, `${window.location.pathname}${cleanQuery}`);
+          }
         }
       }
 
+      // Check if token exists in API client or localStorage before requesting
+      const currentToken = api.getAuthToken();
+      if (!currentToken) {
+        setUser(null);
+        setPreferences(null);
+        return null;
+      }
+
       const data = await api.getMe();
-      setUser(data.user);
-      setPreferences(data.preferences);
-    } catch {
+      if (data && data.user) {
+        setUser(data.user);
+        setPreferences(data.preferences || null);
+        return data.user;
+      } else {
+        setUser(null);
+        setPreferences(null);
+        return null;
+      }
+    } catch (err) {
+      console.error('Failed to refresh user session:', err);
       setUser(null);
       setPreferences(null);
+      return null;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshUser();
-  }, []);
+  }, [refreshUser]);
 
   const login = async (credentials: any) => {
     await api.login(credentials);

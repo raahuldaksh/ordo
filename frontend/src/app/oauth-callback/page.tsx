@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -11,50 +11,74 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const hasProcessedRef = useRef(false);
 
   useEffect(() => {
-    let isMounted = true;
+    if (hasProcessedRef.current) return;
+    hasProcessedRef.current = true;
 
     async function handleAuth() {
-      const token = searchParams.get('token');
-      const errorParam = searchParams.get('error');
+      // 1. Multi-tier resolution for token and error parameters
+      let token = searchParams.get('token');
+      let refreshToken = searchParams.get('refreshToken');
+      let errorParam = searchParams.get('error');
+
+      if (typeof window !== 'undefined') {
+        const windowParams = new URLSearchParams(window.location.search);
+        if (!token) token = windowParams.get('token');
+        if (!refreshToken) refreshToken = windowParams.get('refreshToken');
+        if (!errorParam) errorParam = windowParams.get('error');
+
+        // Fallback to pre-existing stored token if URL params were cleared
+        if (!token) {
+          token = api.getAuthToken();
+        }
+        if (!refreshToken) {
+          try { refreshToken = localStorage.getItem('ordo_refresh_token'); } catch {}
+        }
+      }
 
       if (errorParam) {
-        if (isMounted) {
-          setError('Google authentication was cancelled or failed.');
-          setTimeout(() => router.push(`/login?error=${encodeURIComponent(errorParam)}`), 1500);
-        }
+        setError('Google authentication was cancelled or failed.');
+        setTimeout(() => router.replace(`/login?error=${encodeURIComponent(errorParam!)}`), 1500);
         return;
       }
 
       if (!token) {
-        if (isMounted) {
-          setError('No authentication token received.');
-          setTimeout(() => router.push('/login?error=missing_token'), 1500);
-        }
+        setError('No authentication token received.');
+        setTimeout(() => router.replace('/login?error=missing_token'), 1500);
         return;
       }
 
       try {
+        // 2. Persist tokens synchronously
         api.setAuthToken(token);
-        await refreshUser();
-        if (isMounted) {
-          // Direct to /my-day for optimal UX
-          router.push('/my-day');
+        if (refreshToken && typeof window !== 'undefined') {
+          try { localStorage.setItem('ordo_refresh_token', refreshToken); } catch {}
+        }
+
+        // 3. Verify user session with backend
+        const user = await refreshUser();
+
+        if (user) {
+          // 4. Safely clean up URL query parameters
+          if (typeof window !== 'undefined') {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+
+          // 5. Navigate to protected planner route without retaining callback in history
+          router.replace('/my-day');
+        } else {
+          throw new Error('User session could not be established.');
         }
       } catch (err: any) {
-        if (isMounted) {
-          setError(err.message || 'Failed to authenticate session.');
-          setTimeout(() => router.push('/login?error=session_error'), 1500);
-        }
+        console.error('OAuth callback session resolution error:', err);
+        setError(err.message || 'Failed to authenticate session.');
+        setTimeout(() => router.replace('/login?error=session_error'), 1500);
       }
     }
 
     handleAuth();
-
-    return () => {
-      isMounted = false;
-    };
   }, [searchParams, refreshUser, router]);
 
   return (
