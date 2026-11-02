@@ -15,66 +15,114 @@ function CallbackContent() {
 
   useEffect(() => {
     if (hasProcessedRef.current) return;
-    hasProcessedRef.current = true;
 
     async function handleAuth() {
-      // 1. Multi-tier resolution for token and error parameters
-      let token = searchParams.get('token');
-      let refreshToken = searchParams.get('refreshToken');
-      let errorParam = searchParams.get('error');
+      // Helper to extract param from searchParams, window.location.search, and window.location.hash
+      const getParam = (name: string): string | null => {
+        let val = searchParams.get(name);
+        if (val) return val;
 
-      if (typeof window !== 'undefined') {
-        const windowParams = new URLSearchParams(window.location.search);
-        if (!token) token = windowParams.get('token');
-        if (!refreshToken) refreshToken = windowParams.get('refreshToken');
-        if (!errorParam) errorParam = windowParams.get('error');
+        if (typeof window !== 'undefined') {
+          try {
+            const sp = new URLSearchParams(window.location.search);
+            val = sp.get(name);
+            if (val) return val;
 
-        // Fallback to pre-existing stored token if URL params were cleared
-        if (!token) {
-          token = api.getAuthToken();
+            if (window.location.hash) {
+              const hp = new URLSearchParams(window.location.hash.replace(/^#\/?/, '?'));
+              val = hp.get(name);
+              if (val) return val;
+            }
+
+            const match = window.location.href.match(new RegExp(`[?&#]${name}=([^&#]*)`));
+            if (match && match[1]) {
+              return decodeURIComponent(match[1]);
+            }
+          } catch {}
         }
-        if (!refreshToken) {
-          try { refreshToken = localStorage.getItem('ordo_refresh_token'); } catch {}
-        }
+        return null;
+      };
+
+      let token = getParam('token');
+      let refreshToken = getParam('refreshToken');
+      let errorParam = getParam('error');
+
+      // Hydration delay recovery: if token not yet present on mobile, wait 350ms and retry
+      if (!token && !errorParam && typeof window !== 'undefined') {
+        await new Promise((r) => setTimeout(r, 350));
+        token = getParam('token');
+        refreshToken = getParam('refreshToken');
+        errorParam = getParam('error');
       }
+
+      // Stored token fallback
+      if (!token && typeof window !== 'undefined') {
+        token = api.getAuthToken();
+      }
+      if (!refreshToken && typeof window !== 'undefined') {
+        try {
+          refreshToken = localStorage.getItem('ordo_refresh_token');
+        } catch {}
+      }
+
+      hasProcessedRef.current = true;
 
       if (errorParam) {
         setError('Google authentication was cancelled or failed.');
-        setTimeout(() => router.replace(`/login?error=${encodeURIComponent(errorParam!)}`), 1500);
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.replace(`/login?error=${encodeURIComponent(errorParam!)}`);
+          } else {
+            router.replace(`/login?error=${encodeURIComponent(errorParam!)}`);
+          }
+        }, 2000);
         return;
       }
 
       if (!token) {
         setError('No authentication token received.');
-        setTimeout(() => router.replace('/login?error=missing_token'), 1500);
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.replace('/login?error=missing_token');
+          } else {
+            router.replace('/login?error=missing_token');
+          }
+        }, 2000);
         return;
       }
 
       try {
-        // 2. Persist tokens synchronously
+        // Persist tokens synchronously
         api.setAuthToken(token);
         if (refreshToken && typeof window !== 'undefined') {
-          try { localStorage.setItem('ordo_refresh_token', refreshToken); } catch {}
+          try {
+            localStorage.setItem('ordo_refresh_token', refreshToken);
+          } catch {}
         }
 
-        // 3. Verify user session with backend
+        // Verify user session with backend
         const user = await refreshUser();
 
         if (user) {
-          // 4. Safely clean up URL query parameters
+          // Hard navigation to /my-day to ensure complete auth state initialization on mobile
           if (typeof window !== 'undefined') {
-            window.history.replaceState({}, document.title, window.location.pathname);
+            window.location.replace('/my-day');
+          } else {
+            router.replace('/my-day');
           }
-
-          // 5. Navigate to protected planner route without retaining callback in history
-          router.replace('/my-day');
         } else {
           throw new Error('User session could not be established.');
         }
       } catch (err: any) {
         console.error('OAuth callback session resolution error:', err);
         setError(err.message || 'Failed to authenticate session.');
-        setTimeout(() => router.replace('/login?error=session_error'), 1500);
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.replace('/login?error=session_error');
+          } else {
+            router.replace('/login?error=session_error');
+          }
+        }, 2500);
       }
     }
 
@@ -118,4 +166,3 @@ export default function OAuthCallbackPage() {
     </Suspense>
   );
 }
-

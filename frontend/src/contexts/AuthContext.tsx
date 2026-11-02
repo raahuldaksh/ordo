@@ -33,8 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const urlToken = params.get('token');
+        const urlRefreshToken = params.get('refreshToken');
         if (urlToken) {
           api.setAuthToken(urlToken);
+        }
+        if (urlRefreshToken) {
+          try { localStorage.setItem('ordo_refresh_token', urlRefreshToken); } catch {}
+        }
+        if (urlToken) {
           // Only clean URL query params if we are NOT on /oauth-callback (let oauth-callback orchestrate its own lifecycle)
           if (!window.location.pathname.includes('/oauth-callback')) {
             params.delete('token');
@@ -83,6 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetch(`${backendUrl}/health`, { mode: 'no-cors' }).catch(() => {});
         }
       } catch {}
+      // Skip auto-refresh on oauth-callback — that page manages its own auth lifecycle
+      if (window.location.pathname.includes('/oauth-callback')) return;
     }
     refreshUser();
   }, [refreshUser]);
