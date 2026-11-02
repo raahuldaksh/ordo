@@ -31,6 +31,22 @@ async function bootstrap() {
         logger.error('MongoDB connection error during startup:', { error: err.message });
       });
 
+    // 4. Render Keep-Alive Ping Engine (Phase 1: Zero Cold Starts)
+    // Runs every 10 minutes on production/Render to keep process permanently warm
+    if (process.env.RENDER || config.env === 'production') {
+      const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000;
+      const PING_URL = 'https://ordo-z65h.onrender.com/health';
+      setInterval(async () => {
+        try {
+          const res = await fetch(PING_URL);
+          logger.info(`Render self keep-alive ping status: ${res.status}`);
+        } catch (err: any) {
+          logger.warn(`Render keep-alive ping failed: ${err.message}`);
+        }
+      }, KEEP_ALIVE_INTERVAL);
+      logger.info('Render 24x7 keep-alive ping engine activated (10m interval)');
+    }
+
     // Graceful shutdown handling
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}. Shutting down gracefully...`);

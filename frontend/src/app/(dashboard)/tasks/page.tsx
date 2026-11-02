@@ -70,17 +70,58 @@ export default function TasksPage() {
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => api.archiveTask(id),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const currentQueryKey = ['tasks', search, statusFilter, typeFilter, priorityFilter];
+      const previousTasks = queryClient.getQueryData(currentQueryKey);
+
+      queryClient.setQueryData(currentQueryKey, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((t: any) => t._id === id ? { ...t, archivedAt: t.archivedAt ? null : new Date().toISOString() } : t);
+      });
+
+      return { previousTasks, currentQueryKey };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task archived status updated');
+    },
+    onError: (err: any, _vars, context) => {
+      toast.error(err.message || 'Failed to update archive status');
+      if (context?.previousTasks && context?.currentQueryKey) {
+        queryClient.setQueryData(context.currentQueryKey, context.previousTasks);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deleteTask(id),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const currentQueryKey = ['tasks', search, statusFilter, typeFilter, priorityFilter];
+      const previousTasks = queryClient.getQueryData(currentQueryKey);
+
+      queryClient.setQueryData(currentQueryKey, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: any) => t._id !== id);
+      });
+
+      return { previousTasks, currentQueryKey };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task permanently deleted');
+    },
+    onError: (err: any, _vars, context) => {
+      toast.error(err.message || 'Failed to delete task');
+      if (context?.previousTasks && context?.currentQueryKey) {
+        queryClient.setQueryData(context.currentQueryKey, context.previousTasks);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
     }
   });
 

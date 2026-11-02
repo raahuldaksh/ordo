@@ -40,7 +40,7 @@ const REASON_CATEGORIES: Array<{ value: ReasonCategory; label: string }> = [
 ];
 
 export function TaskStatusModal() {
-  const { statusModalTask, setStatusModalTask } = useUIStore();
+  const { statusModalTask, setStatusModalTask, selectedDate } = useUIStore();
   const queryClient = useQueryClient();
 
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus>('SUCCESS');
@@ -73,15 +73,62 @@ export function TaskStatusModal() {
 
       return api.updateTaskStatus(statusModalTask._id, payload);
     },
+    onMutate: async () => {
+      if (!statusModalTask?._id) return;
+      const taskId = statusModalTask._id;
+      const targetStatus = selectedStatus;
+
+      // Close modal immediately for zero perceived latency
+      setStatusModalTask(null);
+
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['planner-day', selectedDate] });
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+
+      // Snapshot previous states
+      const previousSchedule = queryClient.getQueryData(['planner-day', selectedDate]);
+      const previousTasks = queryClient.getQueryData(['tasks']);
+
+      // Optimistically update planner-day
+      queryClient.setQueryData(['planner-day', selectedDate], (old: any) => {
+        if (!old) return old;
+        const updateTaskItem = (t: any) => t._id === taskId ? { ...t, status: targetStatus } : t;
+        return {
+          ...old,
+          allScheduled: (old.allScheduled || []).map(updateTaskItem),
+          scheduled: {
+            fixed: (old.scheduled?.fixed || []).map(updateTaskItem),
+            flexible: (old.scheduled?.flexible || []).map(updateTaskItem),
+            unplanned: (old.scheduled?.unplanned || []).map(updateTaskItem),
+          },
+          unscheduled: (old.unscheduled || []).map(updateTaskItem)
+        };
+      });
+
+      // Optimistically update tasks list
+      queryClient.setQueryData(['tasks'], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((t: any) => t._id === taskId ? { ...t, status: targetStatus } : t);
+      });
+
+      return { previousSchedule, previousTasks };
+    },
     onSuccess: () => {
       toast.success(`Task marked as ${selectedStatus}`);
+    },
+    onError: (err: any, _vars, context) => {
+      toast.error(err.message || 'Failed to update task status');
+      if (context?.previousSchedule) {
+        queryClient.setQueryData(['planner-day', selectedDate], context.previousSchedule);
+      }
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks'], context.previousTasks);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['planner-day'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
-      setStatusModalTask(null);
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to update task status');
     }
   });
 

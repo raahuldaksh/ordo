@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, UserPreferences } from '@/types/api';
-import { api } from '@/lib/api';
+import { api, getBackendUrl } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -75,6 +75,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Ambient pre-warm ping to ensure backend stays active with sub-second responsiveness
+    if (typeof window !== 'undefined') {
+      try {
+        const backendUrl = getBackendUrl();
+        if (backendUrl.includes('render.com')) {
+          fetch(`${backendUrl}/health`, { mode: 'no-cors' }).catch(() => {});
+        }
+      } catch {}
+    }
     refreshUser();
   }, [refreshUser]);
 

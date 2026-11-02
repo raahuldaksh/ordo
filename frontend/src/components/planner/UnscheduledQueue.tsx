@@ -29,10 +29,47 @@ export function UnscheduledQueue({ tasks }: UnscheduledQueueProps) {
       scheduledStartAt: null,
       scheduledEndAt: null
     }),
-    onSuccess: () => {
+    onMutate: async (title: string) => {
       setNewTitle('');
-      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
+      await queryClient.cancelQueries({ queryKey: ['planner-day', selectedDate] });
+      const previousSchedule = queryClient.getQueryData(['planner-day', selectedDate]);
+
+      const optimisticTask: Task = {
+        _id: 'temp-' + Date.now(),
+        userId: 'temp',
+        title,
+        taskType: 'UNPLANNED',
+        priority: 'MEDIUM',
+        status: 'PENDING',
+        durationMinutes: 30,
+        timezone: 'UTC',
+        tags: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      queryClient.setQueryData(['planner-day', selectedDate], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unscheduled: [optimisticTask, ...(old.unscheduled || [])]
+        };
+      });
+
+      return { previousSchedule };
+    },
+    onSuccess: () => {
       toast.success('Unscheduled task added');
+    },
+    onError: (err: any, _vars, context) => {
+      toast.error(err.message || 'Failed to add unscheduled task');
+      if (context?.previousSchedule) {
+        queryClient.setQueryData(['planner-day', selectedDate], context.previousSchedule);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
 
@@ -57,9 +94,32 @@ export function UnscheduledQueue({ tasks }: UnscheduledQueueProps) {
 
   const deleteTaskMutation = useMutation({
     mutationFn: (taskId: string) => api.deleteTask(taskId),
+    onMutate: async (taskId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['planner-day', selectedDate] });
+      const previousSchedule = queryClient.getQueryData(['planner-day', selectedDate]);
+
+      queryClient.setQueryData(['planner-day', selectedDate], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unscheduled: (old.unscheduled || []).filter((t: any) => t._id !== taskId)
+        };
+      });
+
+      return { previousSchedule };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
       toast.success('Task removed');
+    },
+    onError: (err: any, _vars, context) => {
+      toast.error(err.message || 'Failed to delete task');
+      if (context?.previousSchedule) {
+        queryClient.setQueryData(['planner-day', selectedDate], context.previousSchedule);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['planner-day'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
 
