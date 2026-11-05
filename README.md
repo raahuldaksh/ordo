@@ -61,7 +61,7 @@ npm install
 cp .env.example .env.local
 npm run dev
 ```
-Frontend runs at `http://localhost:3000`.
+Frontend runs at `https://ordo-dusky.vercel.app/`.
 
 ---
 
